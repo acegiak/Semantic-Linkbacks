@@ -214,7 +214,7 @@ function linkback_fix($comment_ID) {
 
 add_action( 'pingback_post', 'linkback_fix', 90, 1 );
 add_action( 'trackback_post', 'linkback_fix', 90, 1 ); 
-add_action( 'semantic_linkback_post', 'linkback_fix', 90, 1 );
+add_action( 'webmention_post', 'linkback_fix', 90, 1 );
 
 
 
