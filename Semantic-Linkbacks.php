@@ -2,20 +2,21 @@
 /*
  Plugin Name: Semantic-Linkbacks
  Plugin URI: https://github.com/acegiak/Semantic-Linkbacks
- Description: Semantic Linkbacks for webmentions and pingbacks
+ Description: Semantic Linkbacks for semantic_linkbacks and pingbacks
  Author: pfefferle & acegiak
  Author URI: http://notizblog.org/
  Version: 2.0.0-dev
 */
-use Mf2;
+require_once "Mf2/Parser.php";
+use Mf2\Parser;
 
 /**
  * all supported url types
  *
  * @return array
  */
-function webmention_get_supported_url_types() {
-  return apply_filters("webmention_supported_url_types", array("in-reply-to", "like", "mention"));
+function semantic_linkback_get_supported_url_types() {
+  return apply_filters("semantic_linkback_supported_url_types", array("in-reply-to", "like", "mention"));
 }
 
 /**
@@ -25,7 +26,7 @@ function webmention_get_supported_url_types() {
  * @param string $target the target url
  * @return array|false the h-entry node or false
  */
-function webmention_hentry_walker( $mf_array, $target ) {
+function semantic_linkback_hentry_walker( $mf_array, $target ) {
   // some basic checks
   if ( !is_array( $mf_array ) )
     return false;
@@ -43,14 +44,14 @@ function webmention_hentry_walker( $mf_array, $target ) {
           // check properties if target urls was mentioned
           foreach ($mf['properties'] as $key => $values) {
             // check u-* params at first      
-            if ( in_array( $key, webmention_get_supported_url_types() )) {
+            if ( in_array( $key, semantic_linkback_get_supported_url_types() )) {
               foreach ($values as $value) {
                 if ($value == $target) {
                   return $mf['properties'];
                 }
               }
             // check content as fallback
-            } elseif ( in_array( $key, array("content", "summary", "name")) && preg_match_all("|<a[^>]+?".preg_quote($target, "|")."[^>]*>([^>]+?)</a>|", $values[0], $context) ) {
+            } elseif ( in_array( $key, array("content", "summary", "name")) && preg_match_all("|<a[^>]+?".preg_quote($target, "|")."[^>]*>([^>]+?)</a>|", $values[0][0], $context) ) {
               return $mf['properties'];
             }
           }
@@ -59,7 +60,7 @@ function webmention_hentry_walker( $mf_array, $target ) {
       // h-entries
       } elseif ( in_array( "h-feed", $mf["type"]) && isset($mf['children']) ) {
         $temp = array("items" => $mf['children']);
-        return webmention_hentry_walker($temp, $target);
+        return semantic_linkback_hentry_walker($temp, $target);
       }
     }
   }
@@ -67,7 +68,7 @@ function webmention_hentry_walker( $mf_array, $target ) {
   return false;
 }
 
-function webmention_to_comment( $html, $source, $target, $post, $commentdata = null ) {
+function semantic_linkback_to_comment( $html, $source, $target, $post, $commentdata = null ) {
   global $wpdb;
   
   // check commentdata
@@ -75,7 +76,7 @@ function webmention_to_comment( $html, $source, $target, $post, $commentdata = n
     $comment_post_ID = (int) $post->ID;
     $commentdata = array('comment_post_ID' => $comment_post_ID, 'comment_author' => '', 'comment_author_url' => '', 'comment_author_email' => '', 'comment_content' => '', 'comment_type' => '', 'comment_ID' => '');
     
-    if ( $comments = get_comments( array('meta_key' => 'webmention_source', 'meta_value' => $source) ) ) {
+    if ( $comments = get_comments( array('meta_key' => 'semantic_linkback_source', 'meta_value' => $source) ) ) {
       $comment = $comments[0];
       $commentdata['comment_ID'] = $comment->comment_ID;
     }
@@ -93,10 +94,11 @@ function webmention_to_comment( $html, $source, $target, $post, $commentdata = n
   $commentdata['comment_type'] = '';
   
   // parse source html
-  $result = Mf2\parse($html);
+  $parser = new Parser( $html );
+  $result = $parser->parse(true);
   
   // search for a matching h-entry
-  $hentry = webmention_hentry_walker($result, $target);
+  $hentry = semantic_linkback_hentry_walker($result, $target);
   
   if (!$hentry) {
     header('HTTP/1.1 400 Bad Request');
@@ -177,15 +179,15 @@ function webmention_to_comment( $html, $source, $target, $post, $commentdata = n
   }
   
   // add source url as comment-meta
-  add_comment_meta( $comment_ID, "webmention_source", $source, true );
+  add_comment_meta( $comment_ID, "semantic_linkback_source", $source, true );
   
   if (isset($author['photo'])) {
     // add photo url as comment-meta
-    add_comment_meta( $comment_ID, "webmention_avatar", $author['photo'][0], true );
+    add_comment_meta( $comment_ID, "semantic_linkback_avatar", $author['photo'][0], true );
   }
 }
 
-function webmention_pingback_fix($comment_ID) {
+function linkback_fix($comment_ID) {
   $commentdata = get_comment($comment_ID, ARRAY_A);
   
   if (!$commentdata) {
@@ -207,12 +209,12 @@ function webmention_pingback_fix($comment_ID) {
 
   $html = wp_remote_retrieve_body( $response );
 
-  webmention_to_comment( $html, $commentdata['comment_author_url'], $target, $post, $commentdata );
+  semantic_linkback_to_comment( $html, $commentdata['comment_author_url'], $target, $post, $commentdata );
 }
 
 add_action( 'pingback_post', 'linkback_fix', 90, 1 );
 add_action( 'trackback_post', 'linkback_fix', 90, 1 ); 
-add_action( 'webmention_post', 'linkback_fix', 90, 1 );
+add_action( 'semantic_linkback_post', 'linkback_fix', 90, 1 );
 
 
 
