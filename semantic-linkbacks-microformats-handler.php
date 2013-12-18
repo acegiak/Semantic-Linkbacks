@@ -6,7 +6,7 @@ use Mf2\Parser;
 /**
  *
  */
-class MfLinkbacks {
+class SemanticLinkbacksPlugin_MicroformatsHandler {
   // the parsed microformats objects
   private $entries = null;
 
@@ -254,4 +254,4 @@ class MfLinkbacks {
   }
 }
 
-new MfLinkbacks();
+new SemanticLinkbacksPlugin_MicroformatsHandler();

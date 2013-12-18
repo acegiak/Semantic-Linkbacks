@@ -8,7 +8,7 @@
  Version: 2.0.0-dev
 */
 
-require_once "mf-linkbacks.php";
+require_once "semantic-linkbacks-microformats-handler.php";
 
 /**
  *
