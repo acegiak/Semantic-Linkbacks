@@ -4,15 +4,12 @@ require_once "Mf2/Parser.php";
 use Mf2\Parser;
 
 /**
+ * @author Matthias Pfefferle
  *
+ * provides a microformats handler for the "semantic linkbacks"
+ * WordPress plugin
  */
 class SemanticLinkbacksPlugin_MicroformatsHandler {
-  // the parsed microformats objects
-  private $entries = null;
-
-  // the entry of interest
-  private $entry = null;
-
   // the type of the linkback
   private $type = "mention";
 
@@ -60,7 +57,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      */
     $class_mapper["mention"]     = "mention";
 
-    return apply_filters("mf_linkbacks_class_mapper", $class_mapper);
+    return apply_filters("semantic_linkbacks_microformats_class_mapper", $class_mapper);
   }
 
   /**
@@ -71,13 +68,13 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public function get_rel_mapper() {
     $rel_mapper = array();
 
-    return apply_filters("mf_linkbacks_rel_mapper", $rel_mapper);
+    return apply_filters("semantic_linkbacks_microformats_rel_mapper", $rel_mapper);
   }
 
   /**
    *
    */
-  public function generate_commentdata($commentdata, $original_commentdata, $target, $html) {
+  public function generate_commentdata($commentdata, $target, $html) {
     global $wpdb;
 
     // parse source html
@@ -162,23 +159,8 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
       }
     }
 
-    $commentdata['comment_post_ID'] = $original_commentdata["comment_post_ID"];
-    $commentdata['comment_ID'] = $original_commentdata["comment_ID"];
-
-    //if ( $comments = get_comments( array('meta_key' => 'semantic_linkback_source', 'meta_value' => $source) ) ) {
-    //  $comment = $comments[0];
-    //  $commentdata['comment_ID'] = $comment->comment_ID;
-
-      //@todo delete pingback
-    //}
-
-    // check if there is a parent comment
-    if ( $query = parse_url($target, PHP_URL_QUERY) ) {
-      parse_str($query);
-      if (isset($replytocom) && get_comment($replytocom)) {
-        $commentdata['comment_parent'] = $replytocom;
-      }
-    }
+    // add source url as comment-meta
+    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $this->type );
 
     return $commentdata;
   }
@@ -223,6 +205,8 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public function get_representative_entry( $entries, $target ) {
     // iterate array
     foreach ($entries as $entry) {
+      // @todo add p-in-reply-to context
+
       // check properties
       if ( isset( $entry['properties'] ) ) {
         // check properties if target urls was mentioned

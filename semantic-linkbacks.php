@@ -40,33 +40,66 @@ class SemanticLinkbacksPlugin {
     // check if it is a valid comment
     $commentdata = get_comment($comment_ID, ARRAY_A);
 
+    // check if there is any comment-data
     if (!$commentdata) {
-      return false;
+      return $comment_ID;
+    }
+
+    // source
+    $source = $commentdata['comment_author_url'];
+
+    // check if there is already a matching comment
+    if ( $comments = get_comments( array('meta_key' => 'semantic_linkbacks_source', 'meta_value' => $source) ) ) {
+      wp_delete_comment($commentdata['comment_ID'], false);
+
+      $comment = $comments[0];
+
+      if ($comment_ID != $comment->comment_ID) {
+        $commentdata['comment_ID'] = $comment->comment_ID;
+      }
     }
 
     // check if post exists
     $post = get_post($commentdata['comment_post_ID'], ARRAY_A);
 
     if (!$post) {
-      return false;
+      return $comment_ID;
     }
 
     // get remote html
     $target = get_permalink( $post['ID'] );
-    $response = wp_remote_get( $commentdata['comment_author_url'] );
+    $response = wp_remote_get( $source );
 
+    // handle errors
     if ( is_wp_error( $response ) ) {
-      return false;
+      return $comment_ID;
     }
 
-    $source_html = wp_remote_retrieve_body( $response );
+    // get HTML code of source url
+    $html = wp_remote_retrieve_body( $response );
 
-    //
-    $commentdata = apply_filters("semantic_linkbacks_commentdata", array(), $commentdata, $target, $source_html);
+    // adds a hook to enable some other semantic handlers for example schema.org
+    $commentdata = apply_filters("semantic_linkbacks_commentdata", $commentdata, $target, $html);
 
-    if (!empty($commentdata)) {
-      wp_update_comment($commentdata);
+    if (empty($commentdata)) {
+      return $comment_ID;
     }
+
+    // check if there is a parent comment
+    if ( !isset($commentdata['comment_parent']) && $query = parse_url($target, PHP_URL_QUERY) ) {
+      parse_str($query);
+      if (isset($replytocom) && get_comment($replytocom)) {
+        $commentdata['comment_parent'] = $replytocom;
+      }
+    }
+
+    // update comment
+    wp_update_comment($commentdata);
+
+    // add source url as comment-meta
+    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", $source );
+
+    return $comment_ID;
   }
 }
 
