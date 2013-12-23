@@ -12,17 +12,17 @@ use SplObjectStorage;
 
 /**
  * Parse Microformats2
- * 
+ *
  * Functional shortcut for the commonest cases of parsing microformats2 from HTML.
- * 
+ *
  * Example usage:
- * 
+ *
  *     use Mf2;
  *     $output = Mf2\parse('<span class="h-card">Barnaby Walters</span>');
  *     echo json_encode($output, JSON_PRETTY_PRINT);
- * 
+ *
  * Produces:
- * 
+ *
  *     {
  *      "items": [
  *       {
@@ -34,7 +34,7 @@ use SplObjectStorage;
  *      ],
  *      "rels": {}
  *     }
- * 
+ *
  * @param string|DOMDocument $input The HTML string or DOMDocument object to parse
  * @param string $url The URL the input document was found at, for relative URL resolution
  * @param bool $convertClassic whether or not to convert classic microformats
@@ -48,7 +48,7 @@ function parse($input, $url = null, $convertClassic = true) {
 /**
  * Unicode to HTML Entities
  * @param string $input String containing characters to convert into HTML entities
- * @return string 
+ * @return string
  */
 function unicodeToHtmlEntities($input) {
 	return mb_convert_encoding($input, 'HTML-ENTITIES', mb_detect_encoding($input));
@@ -56,10 +56,11 @@ function unicodeToHtmlEntities($input) {
 
 /**
  * Collapse Whitespace
- * 
+ *
  * Collapses any sequences of whitespace within a string into a single space
  * character.
- * 
+ *
+ * @deprecated since v0.2.3
  * @param string $str
  * @return string
  */
@@ -67,13 +68,19 @@ function collapseWhitespace($str) {
 	return preg_replace('/[\s|\n]+/', ' ', $str);
 }
 
+function unicodeTrim($str) {
+	// this is cheating. TODO: find a better way if this causes any problems
+	$str = str_replace(mb_convert_encoding('&nbsp;', 'UTF-8', 'HTML-ENTITIES'), ' ', $str);
+	$str = preg_replace('/^\s+/', '', $str);
+	return preg_replace('/\s+$/', '', $str);
+}
 
 /**
  * Microformat Name From Class string
- * 
- * Given the value of @class, get the relevant mf classnames (e.g. h-card, 
+ *
+ * Given the value of @class, get the relevant mf classnames (e.g. h-card,
  * p-name).
- * 
+ *
  * @param string $class A space delimited list of classnames
  * @param string $prefix The prefix to look for
  * @return string|array The prefixed name of the first microfomats class found or false
@@ -93,10 +100,10 @@ function mfNamesFromClass($class, $prefix = 'h-') {
 
 /**
  * Get Nested µf Property Name From Class
- * 
- * Returns all the p-, u-, dt- or e- prefixed classnames it finds in a 
+ *
+ * Returns all the p-, u-, dt- or e- prefixed classnames it finds in a
  * space-separated string.
- * 
+ *
  * @param string $class
  * @return string|null
  */
@@ -115,7 +122,7 @@ function nestedMfPropertyNamesFromClass($class) {
 
 /**
  * Wraps mfNamesFromClass to handle an element as input (common)
- * 
+ *
  * @param DOMElement $e The element to get the classname for
  * @param string $prefix The prefix to look for
  * @return mixed See return value of mf2\Parser::mfNameFromClass()
@@ -135,11 +142,11 @@ function nestedMfPropertyNamesFromElement(\DOMElement $e) {
 
 /**
  * Microformats2 Parser
- * 
+ *
  * A class which holds state for parsing microformats2 from HTML.
- * 
+ *
  * Example usage:
- * 
+ *
  *     use Mf2;
  *     $parser = new Mf2\Parser('<p class="h-card">Barnaby Walters</p>');
  *     $output = $parser->parse();
@@ -150,20 +157,21 @@ class Parser {
 
 	/** @var DOMXPath object which can be used to query over any fragment*/
 	public $xpath;
-	
+
 	/** @var DOMDocument */
 	public $doc;
-	
+
 	/** @var SplObjectStorage */
 	protected $parsed;
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @param DOMDocument|string $input The data to parse. A string of HTML or a DOMDocument
 	 * @param string $url The URL of the parsed document, for relative URL resolution
 	 */
 	public function __construct($input, $url = null) {
+		libxml_use_internal_errors(true);
 		if (is_string($input)) {
 			$doc = new DOMDocument();
 			@$doc->loadHTML(unicodeToHtmlEntities($input));
@@ -173,186 +181,184 @@ class Parser {
 			$doc = new DOMDocument();
 			@$doc->loadHTML('');
 		}
-		
+
 		$this->xpath = new DOMXPath($doc);
-		
+
 		$baseurl = $url;
 		foreach ($this->xpath->query('//base[@href]') as $base) {
 			$baseElementUrl = $base->getAttribute('href');
-			
+
 			if (parse_url($baseElementUrl, PHP_URL_SCHEME) === null) {
 				/* The base element URL is relative to the document URL.
 				 *
 				 * :/
 				 *
 				 * Perhaps the author was high? */
-				
+
 				$baseurl = resolveUrl($url, $baseElementUrl);
 			} else {
 				$baseurl = $baseElementUrl;
 			}
 			break;
 		}
-		
+
 		$this->baseurl = $baseurl;
 		$this->doc = $doc;
 		$this->parsed = new SplObjectStorage();
 	}
-	
+
 	private function elementPrefixParsed(\DOMElement $e, $prefix) {
 		if (!$this->parsed->contains($e))
 			$this->parsed->attach($e, array());
-		
+
 		$prefixes = $this->parsed[$e];
 		$prefixes[] = $prefix;
 		$this->parsed[$e] = $prefixes;
 	}
-	
+
 	private function isElementParsed(\DOMElement $e, $prefix) {
 		if (!$this->parsed->contains($e))
 			return false;
-		
+
 		$prefixes = $this->parsed[$e];
-		
+
 		if (!in_array($prefix, $prefixes))
 			return false;
-		
+
 		return true;
 	}
-	
+
 	// TODO: figure out if this has problems with sms: and geo: URLs
-	private function resolveUrl($url) {
-		// If the URL is seriously malformed it’s probably beyond the scope of this 
+	public function resolveUrl($url) {
+		// If the URL is seriously malformed it’s probably beyond the scope of this
 		// parser to try to do anything with it.
 		if (parse_url($url) === false)
 			return $url;
-		
+
 		$scheme = parse_url($url, PHP_URL_SCHEME);
-		
+
 		if (empty($scheme) and !empty($this->baseurl)) {
 			return resolveUrl($this->baseurl, $url);
 		} else {
 			return $url;
 		}
 	}
-	
+
 	// Parsing Functions
-	
+
 	/**
-	 * Parse value-class/value-title on an element, joining with $separator if 
+	 * Parse value-class/value-title on an element, joining with $separator if
 	 * there are multiple.
-	 * 
+	 *
 	 * @param \DOMElement $e
 	 * @param string $separator = '' if multiple value-title elements, join with this string
 	 * @return string|null the parsed value or null if value-class or -title aren’t in use
 	 */
 	public function parseValueClassTitle(\DOMElement $e, $separator = '') {
-		$valueClassElements = $this->xpath->query('.//*[contains(concat(" ", @class, " "), " value ")]', $e);
-		
+		$valueClassElements = $this->xpath->query('./*[contains(concat(" ", @class, " "), " value ")]', $e);
+
 		if ($valueClassElements->length !== 0) {
 			// Process value-class stuff
 			$val = '';
 			foreach ($valueClassElements as $el) {
-				$val .= $el->textContent . $separator;
+				$val .= $el->textContent;
 			}
-			
-			return trim($val);
+
+			return unicodeTrim($val);
 		}
-		
-		$valueTitleElements = $this->xpath->query('.//*[contains(concat(" ", @class, " "), " value-title ")]', $e);
-		
+
+		$valueTitleElements = $this->xpath->query('./*[contains(concat(" ", @class, " "), " value-title ")]', $e);
+
 		if ($valueTitleElements->length !== 0) {
 			// Process value-title stuff
 			$val = '';
 			foreach ($valueTitleElements as $el) {
-				$val .= $el->getAttribute('title') . $separator;
+				$val .= $el->getAttribute('title');
 			}
-			
-			return trim($val);
+
+			return unicodeTrim($val);
 		}
-		
+
 		// No value-title or -class in this element
 		return null;
 	}
-	
+
 	/**
 	 * Given an element with class="p-*", get it’s value
-	 * 
+	 *
 	 * @param DOMElement $p The element to parse
 	 * @return string The plaintext value of $p, dependant on type
 	 * @todo Make this adhere to value-class
 	 */
 	public function parseP(\DOMElement $p) {
 		$classTitle = $this->parseValueClassTitle($p, ' ');
-		
+
 		if ($classTitle !== null)
 			return $classTitle;
-		
+
 		if ($p->tagName == 'img' and $p->getAttribute('alt') !== '') {
 			$pValue = $p->getAttribute('alt');
 		} elseif ($p->tagName == 'area' and $p->getAttribute('alt') !== '') {
 			$pValue = $p->getAttribute('alt');
 		} elseif ($p->tagName == 'abbr' and $p->getAttribute('title') !== '') {
 			$pValue = $p->getAttribute('title');
-		} elseif ($p->tagName == 'data' and $p->getAttribute('value') !== '') {
+		} elseif (in_array($p->tagName, array('data', 'input')) and $p->getAttribute('value') !== '') {
 			$pValue = $p->getAttribute('value');
 		} else {
-			$pValue = trim($p->textContent);
+			$pValue = unicodeTrim($p->textContent);
 		}
-		
-		$pValue = collapseWhitespace($pValue);
-		
+
 		return $pValue;
 	}
 
 	/**
 	 * Given an element with class="u-*", get the value of the URL
-	 * 
+	 *
 	 * @param DOMElement $u The element to parse
 	 * @return string The plaintext value of $u, dependant on type
 	 * @todo make this adhere to value-class
 	 */
 	public function parseU(\DOMElement $u) {
-		$classTitle = $this->parseValueClassTitle($u);
-		
-		if ($classTitle !== null)
-			return $classTitle;
-		
 		if (($u->tagName == 'a' or $u->tagName == 'area') and $u->getAttribute('href') !== null) {
 			$uValue = $u->getAttribute('href');
 		} elseif ($u->tagName == 'img' and $u->getAttribute('src') !== null) {
 			$uValue = $u->getAttribute('src');
 		} elseif ($u->tagName == 'object' and $u->getAttribute('data') !== null) {
 			$uValue = $u->getAttribute('data');
-		} elseif ($u->tagName == 'abbr' and $u->getAttribute('title') !== null) {
-			$uValue = $u->getAttribute('title');
-		} elseif ($u->tagName == 'data' and $u->getAttribute('value') !== null) {
-			$uValue = $u->getAttribute('value');
-		} else {
-			// TODO: Check for element contents == a valid URL
-			$uValue = trim($u->textContent);
 		}
-		
-		$uValue = $this->resolveUrl($uValue);
-		
-		return $uValue;
+
+		if (isset($uValue)) {
+			return $this->resolveUrl($uValue);
+		}
+
+		$classTitle = $this->parseValueClassTitle($u);
+
+		if ($classTitle !== null) {
+			return $classTitle;
+		} elseif ($u->tagName == 'abbr' and $u->getAttribute('title') !== null) {
+			return $u->getAttribute('title');
+		} elseif (in_array($u->tagName, array('data', 'input')) and $u->getAttribute('value') !== null) {
+			return $u->getAttribute('value');
+		} else {
+			return unicodeTrim($u->textContent);
+		}
 	}
 
 	/**
 	 * Given an element with class="dt-*", get the value of the datetime as a php date object
-	 * 
+	 *
 	 * @param DOMElement $dt The element to parse
 	 * @return string The datetime string found
 	 */
 	public function parseDT(\DOMElement $dt) {
 		// Check for value-class pattern
-		$valueClassChildren = $this->xpath->query('.//*[contains(concat(" ", @class, " "), " value ") or contains(concat(" ", @class, " "), " value-title ")]', $dt);
+		$valueClassChildren = $this->xpath->query('./*[contains(concat(" ", @class, " "), " value ") or contains(concat(" ", @class, " "), " value-title ")]', $dt);
 		$dtValue = false;
-		
+
 		if ($valueClassChildren->length > 0) {
 			// They’re using value-class
 			$dateParts = array();
-			
+
 			foreach ($valueClassChildren as $e) {
 				if (strstr(' ' . $e->getAttribute('class') . ' ', ' value-title ')) {
 					$title = $e->getAttribute('title');
@@ -367,25 +373,25 @@ class Parser {
 				}
 				elseif ($e->tagName == 'data') {
 					// Use @value, otherwise innertext
-					$value = $e->hasAttribute('value') ? $e->getAttribute('value') : trim($e->nodeValue);
+					$value = $e->hasAttribute('value') ? $e->getAttribute('value') : unicodeTrim($e->nodeValue);
 					if (!empty($value))
 						$dateParts[] = $value;
 				}
 				elseif ($e->tagName == 'abbr') {
 					// Use @title, otherwise innertext
-					$title = $e->hasAttribute('title') ? $e->getAttribute('title') : trim($e->nodeValue);
+					$title = $e->hasAttribute('title') ? $e->getAttribute('title') : unicodeTrim($e->nodeValue);
 					if (!empty($title))
 						$dateParts[] = $title;
 				}
 				elseif ($e->tagName == 'del' or $e->tagName == 'ins' or $e->tagName == 'time') {
 					// Use @datetime if available, otherwise innertext
-					$dtAttr = ($e->hasAttribute('datetime')) ? $e->getAttribute('datetime') : trim($e->nodeValue);
+					$dtAttr = ($e->hasAttribute('datetime')) ? $e->getAttribute('datetime') : unicodeTrim($e->nodeValue);
 					if (!empty($dtAttr))
 						$dateParts[] = $dtAttr;
 				}
 				else {
 					if (!empty($e->nodeValue))
-						$dateParts[] = trim($e->nodeValue);
+						$dateParts[] = unicodeTrim($e->nodeValue);
 				}
 			}
 
@@ -400,14 +406,14 @@ class Parser {
 					break;
 				} else {
 					// Is the current part a valid time(+TZ?) AND no other time reprentation has been found?
-					if ((preg_match('/\d{2}:\d{2}(Z?[+|-]\d{2}:?\d{2})?/', $part) or preg_match('/\d{1,2}[a|p]m/', $part)) and empty($timePart)) {
+					if ((preg_match('/\d{1,2}:\d{1,2}(Z?[+|-]\d{2}:?\d{2})?/', $part) or preg_match('/\d{1,2}[a|p]m/', $part)) and empty($timePart)) {
 						$timePart = $part;
 					} elseif (preg_match('/\d{4}-\d{2}-\d{2}/', $part) and empty($datePart)) {
 						// Is the current part a valid date AND no other date reprentation has been found?
 						$datePart = $part;
 					}
-					
-					$dtValue = rtrim($datePart, 'T') . 'T' . trim($timePart, 'T');
+
+					$dtValue = rtrim($datePart, 'T') . 'T' . unicodeTrim($timePart, 'T');
 				}
 			}
 		} else {
@@ -418,7 +424,7 @@ class Parser {
 				$alt = $dt->getAttribute('alt');
 				if (!empty($alt))
 					$dtValue = $alt;
-			} elseif ($dt->tagName == 'data') {
+			} elseif (in_array($dt->tagName, array('data'))) {
 				// Use @value, otherwise innertext
 				// Is it an entire dt?
 				$value = $dt->getAttribute('value');
@@ -455,19 +461,19 @@ class Parser {
 	 *
 	 * 	@param DOMElement $e The element to parse
 	 * 	@return string $e’s innerHTML
-	 * 
+	 *
 	 * @todo need to mark this element as e- parsed so it doesn’t get parsed as it’s parent’s e-* too
 	 */
 	public function parseE(\DOMElement $e) {
 		$classTitle = $this->parseValueClassTitle($e);
-		
+
 		if ($classTitle !== null)
 			return $classTitle;
-		
+
 		// Expand relative URLs within children of this element
 		// TODO: as it is this is not relative to only children, make this .// and rerun tests
 		$hyperlinkChildren = $this->xpath->query('//*[@src or @href or @data]', $e);
-		
+
 		foreach ($hyperlinkChildren as $child) {
 			if ($child->hasAttribute('href'))
 				$child->setAttribute('href', $this->resolveUrl($child->getAttribute('href')));
@@ -476,21 +482,21 @@ class Parser {
 			if ($child->hasAttribute('data'))
 				$child->setAttribute('data', $this->resolveUrl($child->getAttribute('data')));
 		}
-		
+
 		$html = '';
 		foreach ($e->childNodes as $node) {
 			$html .= $node->C14N();
 		}
-		
+
 		return array(
 			'html' => $html,
-			'value' => trim($e->textContent)
+			'value' => unicodeTrim($e->textContent)
 		);
 	}
 
 	/**
 	 * Recursively parse microformats
-	 * 
+	 *
 	 * @param DOMElement $e The element to parse
 	 * @return array A representation of the values contained within microformat $e
 	 */
@@ -510,16 +516,16 @@ class Parser {
 		foreach ($this->xpath->query('.//*[contains(concat(" ", @class)," h-")]', $e) as $subMF) {
 			// Parse
 			$result = $this->parseH($subMF);
-			
+
 			// If result was already parsed, skip it
 			if (null === $result)
 				continue;
-			
+
 			$result['value'] = $this->parseP($subMF);
 
 			// Does this µf have any property names other than h-*?
 			$properties = nestedMfPropertyNamesFromElement($subMF);
-			
+
 			if (!empty($properties)) {
 				// Yes! It’s a nested property µf
 				foreach ($properties as $property) {
@@ -529,7 +535,7 @@ class Parser {
 				// No, it’s a child µf
 				$children[] = $result;
 			}
-			
+
 			// Make sure this sub-mf won’t get parsed as a µf or property
 			// TODO: Determine if clearing this is required?
 			$this->elementPrefixParsed($subMF, 'h');
@@ -545,13 +551,13 @@ class Parser {
 				continue;
 
 			$pValue = $this->parseP($p);
-			
+
 			// Add the value to the array for it’s p- properties
 			foreach (mfNamesFromElement($p, 'p-') as $propName) {
 				if (!empty($propName))
 					$return[$propName][] = $pValue;
 			}
-			
+
 			// Make sure this sub-mf won’t get parsed as a top level mf
 			$this->elementPrefixParsed($p, 'p');
 		}
@@ -560,32 +566,32 @@ class Parser {
 		foreach ($this->xpath->query('.//*[contains(concat(" ",  @class)," u-")]', $e) as $u) {
 			if ($this->isElementParsed($u, 'u'))
 				continue;
-			
+
 			$uValue = $this->parseU($u);
-			
+
 			// Add the value to the array for it’s property types
 			foreach (mfNamesFromElement($u, 'u-') as $propName) {
 				$return[$propName][] = $uValue;
 			}
-			
+
 			// Make sure this sub-mf won’t get parsed as a top level mf
 			$this->elementPrefixParsed($u, 'u');
 		}
-		
+
 		// Handle dt-*
 		foreach ($this->xpath->query('.//*[contains(concat(" ", @class), " dt-")]', $e) as $dt) {
 			if ($this->isElementParsed($dt, 'dt'))
 				continue;
-			
+
 			$dtValue = $this->parseDT($dt);
-			
+
 			if ($dtValue) {
 				// Add the value to the array for dt- properties
 				foreach (mfNamesFromElement($dt, 'dt-') as $propName) {
 					$return[$propName][] = $dtValue;
 				}
 			}
-			
+
 			// Make sure this sub-mf won’t get parsed as a top level mf
 			$this->elementPrefixParsed($dt, 'dt');
 		}
@@ -615,6 +621,9 @@ class Parser {
 				if ($e->tagName == 'img' and $e->getAttribute('alt') != '')
 					throw new Exception($e->getAttribute('alt'));
 
+				if ($e->tagName == 'abbr' and $e->hasAttribute('title'))
+					throw new Exception($e->getAttribute('title'));
+
 				// Look for nested img @alt
 				foreach ($this->xpath->query('./img[count(preceding-sibling::*)+count(following-sibling::*)=0]', $e) as $em) {
 					if ($em->getAttribute('alt') != '')
@@ -627,9 +636,9 @@ class Parser {
 						throw new Exception($em->getAttribute('alt'));
 				}
 
-				throw new Exception(trim($e->nodeValue));
+				throw new Exception($e->nodeValue);
 			} catch (Exception $exc) {
-				$return['name'][] = $exc->getMessage();
+				$return['name'][] = unicodeTrim($exc->getMessage());
 			}
 		}
 
@@ -661,20 +670,20 @@ class Parser {
 			// Look for img @src
 			if ($e->tagName == 'a')
 				$url = $e->getAttribute('href');
-			
+
 			// Look for nested img @src
 			foreach ($this->xpath->query('./a[count(preceding-sibling::a)+count(following-sibling::a)=0]', $e) as $em) {
 				$url = $em->getAttribute('href');
 				break;
 			}
-			
+
 			if (!empty($url))
 				$return['url'][] = $this->resolveUrl($url);
 		}
 
 		// Make sure things are in alphabetical order
 		sort($mfTypes);
-		
+
 		// Phew. Return the final result.
 		$parsed = array(
 			'type' => $mfTypes,
@@ -684,22 +693,22 @@ class Parser {
 			$parsed['children'] = array_values(array_filter($children));
 		return $parsed;
 	}
-	
+
 	public function parseRelsAndAlternates() {
 		$rels = array();
 		$alternates = array();
-		
+
 		// Iterate through all a, area and link elements with rel attributes
 		foreach ($this->xpath->query('//*[@rel and @href]') as $hyperlink) {
 			if ($hyperlink->getAttribute('rel') == '')
 				continue;
-			
+
 			// Resolve the href
 			$href = $this->resolveUrl($hyperlink->getAttribute('href'));
-			
+
 			// Split up the rel into space-separated values
 			$linkRels = array_filter(explode(' ', $hyperlink->getAttribute('rel')));
-			
+
 			// If alternate in rels, create alternate structure, append
 			if (in_array('alternate', $linkRels)) {
 				$alt = array(
@@ -708,10 +717,10 @@ class Parser {
 				);
 				if ($hyperlink->hasAttribute('media'))
 					$alt['media'] = $hyperlink->getAttribute('media');
-				
+
 				if ($hyperlink->hasAttribute('hreflang'))
 					$alt['hreflang'] = $hyperlink->getAttribute('hreflang');
-				
+
 				$alternates[] = $alt;
 			} else {
 				foreach ($linkRels as $rel) {
@@ -719,37 +728,37 @@ class Parser {
 				}
 			}
 		}
-		
+
 		if (count($rels) === 0)
 			$rels = new \stdclass;
-		
+
 		return array($rels, $alternates);
 	}
-	
+
 	/**
 	 * Kicks off the parsing routine
-	 * 
+	 *
 	 * If `$htmlSafe` is set, any angle brackets in the results from non e-* properties
 	 * will be HTML-encoded, bringing all output to the same level of encoding.
-	 * 
+	 *
 	 * If a DOMElement is set as the $context, only descendants of that element will
 	 * be parsed for microformats.
-	 * 
+	 *
 	 * @param bool $htmlSafe whether or not to html-encode non e-* properties. Defaults to false
 	 * @param DOMElement $context optionally an element from which to parse microformats
 	 * @return array An array containing all the µfs found in the current document
 	 */
 	public function parse($convertClassic = true, DOMElement $context = null) {
 		$mfs = array();
-		
+
 		if ($convertClassic) {
 			$this->convertLegacy();
 		}
-		
+
 		$mfElements = null === $context
 			? $this->xpath->query('//*[contains(concat(" ",	@class), " h-")]')
 			: $this->xpath->query('.//*[contains(concat(" ",	@class), " h-")]', $context);
-		
+
 		// Parser microformats
 		foreach ($mfElements as $node) {
 			// For each microformat
@@ -758,82 +767,82 @@ class Parser {
 			// Add the value to the array for this property type
 			$mfs[] = $result;
 		}
-		
+
 		// Parse rels
 		list($rels, $alternates) = $this->parseRelsAndAlternates();
-		
+
 		$top = array(
 			'items' => array_values(array_filter($mfs)),
 			'rels' => $rels
 		);
-		
+
 		if (count($alternates))
 			$top['alternates'] = $alternates;
-		
+
 		return $top;
 	}
-	
+
 	/**
 	 * Parse From ID
-	 * 
+	 *
 	 * Given an ID, parse all microformats which are children of the element with
 	 * that ID.
-	 * 
+	 *
 	 * Note that rel values are still document-wide.
-	 * 
-	 * If an element with the ID is not found, an empty skeleton mf2 array structure 
+	 *
+	 * If an element with the ID is not found, an empty skeleton mf2 array structure
 	 * will be returned.
-	 * 
+	 *
 	 * @param string $id
 	 * @param bool $htmlSafe = false whether or not to HTML-encode angle brackets in non e-* properties
 	 * @return array
 	 */
 	public function parseFromId($id, $convertClassic=true) {
 		$matches = $this->xpath->query("//*[@id='{$id}']");
-		
+
 		if (empty($matches))
 			return array('items' => array(), 'rels' => array(), 'alternates' => array());
-		
+
 		return $this->parse($convertClassic, $matches->item(0));
 	}
 
 	/**
 	 * Convert Legacy Classnames
-	 * 
+	 *
 	 * Adds microformats2 classnames into a document containing only legacy
 	 * semantic classnames.
-	 * 
+	 *
 	 * @return Parser $this
 	 */
 	public function convertLegacy() {
 		$doc = $this->doc;
 		$xp = new DOMXPath($doc);
-		
+
 		// replace all roots
 		foreach ($this->classicRootMap as $old => $new) {
 			foreach ($xp->query('//*[contains(concat(" ", @class, " "), " ' . $old . ' ") and not(contains(concat(" ", @class, " "), " ' . $new . ' "))]') as $el) {
 				$el->setAttribute('class', $el->getAttribute('class') . ' ' . $new);
 			}
 		}
-		
+
 		foreach ($this->classicPropertyMap as $oldRoot => $properties) {
 			$newRoot = $this->classicRootMap[$oldRoot];
 			foreach ($properties as $old => $new) {
-				foreach ($xp->query('//*[contains(concat(" ", @class, " "), " ' . $oldRoot . ' ") and not(contains(concat(" ", @class, " "), " ' . $newRoot . ' "))]//*[contains(concat(" ", @class, " "), " ' . $old . ' ") and not(contains(concat(" ", @class, " "), " ' . $newRoot . ' "))]') as $el) {
+				foreach ($xp->query('//*[contains(concat(" ", @class, " "), " ' . $oldRoot . ' ")]//*[contains(concat(" ", @class, " "), " ' . $old . ' ") and not(contains(concat(" ", @class, " "), " ' . $new . ' "))]') as $el) {
 					$el->setAttribute('class', $el->getAttribute('class') . ' ' . $new);
 				}
 			}
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * XPath Query
-	 * 
+	 *
 	 * Runs an XPath query over the current document. Works in exactly the same
 	 * way as DOMXPath::query.
-	 * 
+	 *
 	 * @param string $expression
 	 * @param DOMNode $context
 	 * @return DOMNodeList
@@ -841,7 +850,7 @@ class Parser {
 	public function query($expression, $context = null) {
 		return $this->xpath->query($expression, $context);
 	}
-	
+
 	/**
 	 * Classic Root Classname map
 	 */
@@ -854,7 +863,7 @@ class Parser {
 		'hevent' => 'h-event',
 		'hreview' => 'h-review'
 	);
-	
+
 	public $classicPropertyMap = array(
 		'vcard' => array(
 			'fn' => 'p-name',
@@ -1070,7 +1079,7 @@ function resolveUrl($baseURI, $referenceURI) {
 # 5.2.3 Merge Paths
 function mergePaths($base, $reference) {
 	# If the base URI has a defined authority component and an empty
-	#    path, 
+	#    path,
 	if($base['authority'] && $base['path'] == null) {
 		# then return a string consisting of "/" concatenated with the
 		# reference's path; otherwise,
