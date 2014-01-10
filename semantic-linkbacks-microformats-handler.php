@@ -102,11 +102,11 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // try to find some content
     // @link http://indiewebcamp.com/comments-presentation
     if (isset($properties['summary'])) {
-      $commentdata['comment_content'] = esc_sql($properties['summary'][0]);
+      $commentdata['comment_content'] = wp_slash($properties['summary'][0]);
     } elseif (isset($properties['content'])) {
-      $commentdata['comment_content'] = esc_sql($properties['content'][0]['html']);
+      $commentdata['comment_content'] = wp_slash($properties['content'][0]['html']);
     } elseif (isset($properties['name'])) {
-      $commentdata['comment_content'] = esc_sql($properties['name'][0]);
+      $commentdata['comment_content'] = wp_slash($properties['name'][0]);
     }
 
     // set the right date
@@ -147,15 +147,15 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // if author is present use the informations for the comment
     if ($author) {
       if (isset($author['name'])) {
-        $commentdata['comment_author'] = esc_sql($author['name'][0]);
+        $commentdata['comment_author'] = wp_slash($author['name'][0]);
       }
 
       if (isset($author['email'])) {
-        $commentdata['comment_author_email'] = esc_sql($author['email'][0]);
+        $commentdata['comment_author_email'] = wp_slash($author['email'][0]);
       }
 
       if (isset($author['url'])) {
-        $commentdata['comment_author_url'] = esc_sql($author['url'][0]);
+        $commentdata['comment_author_url'] = wp_slash($author['url'][0]);
       }
     }
 

@@ -50,7 +50,7 @@ class SemanticLinkbacksPlugin {
 
     // check if there is already a matching comment
     if ( $comments = get_comments( array('meta_key' => 'semantic_linkbacks_source', 'meta_value' => $source) ) ) {
-      wp_delete_comment($commentdata['comment_ID'], false);
+      wp_delete_comment($commentdata['comment_ID'], true);
 
       $comment = $comments[0];
 
