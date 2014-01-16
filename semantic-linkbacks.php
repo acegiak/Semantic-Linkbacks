@@ -29,6 +29,8 @@ class SemanticLinkbacksPlugin {
     add_action('pingback_post', array( $this, 'linkback_fix' ));
     add_action('trackback_post', array( $this, 'linkback_fix' ));
     add_action('webmention_post', array( $this, 'linkback_fix' ));
+
+    add_filter('get_comment_link', array( $this, 'get_comment_link' ), 99, 3);
   }
 
   /**
@@ -37,6 +39,11 @@ class SemanticLinkbacksPlugin {
    * @param int $comment_ID the comment id
    */
   public function linkback_fix($comment_ID) {
+    // return if comment_ID is empty
+    if (!$comment_ID) {
+      return $comment_ID;
+    }
+
     // check if it is a valid comment
     $commentdata = get_comment($comment_ID, ARRAY_A);
 
@@ -50,12 +57,15 @@ class SemanticLinkbacksPlugin {
 
     // check if there is already a matching comment
     if ( $comments = get_comments( array('meta_key' => 'semantic_linkbacks_source', 'meta_value' => $source) ) ) {
-      wp_delete_comment($commentdata['comment_ID'], true);
-
       $comment = $comments[0];
 
       if ($comment_ID != $comment->comment_ID) {
+        wp_delete_comment($commentdata['comment_ID'], true);
+
         $commentdata['comment_ID'] = $comment->comment_ID;
+        $commentdata['comment_approved'] = $comment->comment_approved;
+      } else {
+        $commentdata['comment_ID'] = $comment_ID;
       }
     }
 
@@ -93,6 +103,8 @@ class SemanticLinkbacksPlugin {
       }
     }
 
+    $commentdata['comment_type'] = '';
+
     // update comment
     wp_update_comment($commentdata);
 
@@ -100,6 +112,22 @@ class SemanticLinkbacksPlugin {
     update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", $source );
 
     return $comment_ID;
+  }
+
+  /**
+   * replace comment url with webmention source
+   *
+   * @param string $link the link url
+   * @param obj $comment the comment object
+   * @param array $args a list of arguments to generate the final link tag
+   * @return string the webmention source or the original comment link
+   */
+  public function get_comment_link($link, $comment, $args) {
+    if ( $source = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_source', true) ) {
+      return $source;
+    }
+
+    return $link;
   }
 }
 
