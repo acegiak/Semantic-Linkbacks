@@ -26,6 +26,8 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public function init() {
     //
     add_filter('semantic_linkbacks_commentdata', array( $this, 'generate_commentdata' ), 1, 4);
+    add_filter('get_avatar', array( $this, 'get_avatar'), 11, 5);
+    add_filter('get_avatar_comment_types', array( $this, 'get_avatar_comment_types' ));
   }
 
   /**
@@ -167,7 +169,12 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     }
 
     // add source url as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $this->type );
+    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $this->type, true );
+
+    if (isset($author['photo'])) {
+      // add photo url as comment-meta
+      update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_avatar", $author['photo'][0], true );
+    }
 
     return $commentdata;
   }
@@ -242,6 +249,51 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     }
 
     return false;
+  }
+
+  /**
+   * replaces the default avatar with the webmention uf2 photo
+   *
+   * @param string $avatar the avatar-url
+   * @param int|string|object $id_or_email A user ID, email address, or comment object
+   * @param int $size Size of the avatar image
+   * @param string $default URL to a default image to use if no avatar is available
+   * @param string $alt Alternative text to use in image tag. Defaults to blank
+   * @return string new avatar-url
+   */
+  public function get_avatar($avatar, $id_or_email, $size, $default = '', $alt = '') {
+    if (!is_object($id_or_email) || !isset($id_or_email->comment_type) || !get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true)) {
+      return $avatar;
+    }
+
+    // check if comment has a webfinger-avatar
+    $sl_avatar = get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true);
+
+    if (!$sl_avatar) {
+      return $avatar;
+    }
+
+    if ( false === $alt )
+      $safe_alt = '';
+    else
+      $safe_alt = esc_attr( $alt );
+
+    $avatar = "<img alt='{$safe_alt}' src='{$sl_avatar}' class='avatar avatar-{$size} photo avatar-semantic-linkbacks' height='{$size}' width='{$size}' />";
+    return $avatar;
+  }
+
+  /**
+   * show avatars also on pingbacks, trackbacks and webmentions
+   *
+   * @param array $types the comment_types
+   * @return array updated comment_types
+   */
+  public function get_avatar_comment_types($types) {
+    $types[] = "pingback";
+    $types[] = "trackback";
+    $types[] = "webmention";
+
+    return $types;
   }
 }
 

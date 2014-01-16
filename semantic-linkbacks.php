@@ -58,9 +58,10 @@ class SemanticLinkbacksPlugin {
       $comment = $comments[0];
 
       if ($comment_ID != $comment->comment_ID) {
-        wp_delete_comment($commentdata['comment_ID']);
+        wp_delete_comment($commentdata['comment_ID'], true);
 
         $commentdata['comment_ID'] = $comment->comment_ID;
+        $commentdata['comment_approved'] = $comment->comment_approved;
       } else {
         $commentdata['comment_ID'] = $comment_ID;
       }
@@ -99,6 +100,12 @@ class SemanticLinkbacksPlugin {
         $commentdata['comment_parent'] = $replytocom;
       }
     }
+
+    var_dump($commentdata['comment_type'] );
+
+    $commentdata['comment_type'] = '';
+
+    var_dump($commentdata);
 
     // update comment
     wp_update_comment($commentdata);
