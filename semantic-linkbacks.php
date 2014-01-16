@@ -37,6 +37,11 @@ class SemanticLinkbacksPlugin {
    * @param int $comment_ID the comment id
    */
   public function linkback_fix($comment_ID) {
+    // return if comment_ID is empty
+    if (!$comment_ID) {
+      return $comment_ID;
+    }
+
     // check if it is a valid comment
     $commentdata = get_comment($comment_ID, ARRAY_A);
 
@@ -50,12 +55,14 @@ class SemanticLinkbacksPlugin {
 
     // check if there is already a matching comment
     if ( $comments = get_comments( array('meta_key' => 'semantic_linkbacks_source', 'meta_value' => $source) ) ) {
-      wp_delete_comment($commentdata['comment_ID'], true);
-
       $comment = $comments[0];
 
       if ($comment_ID != $comment->comment_ID) {
+        wp_delete_comment($commentdata['comment_ID']);
+
         $commentdata['comment_ID'] = $comment->comment_ID;
+      } else {
+        $commentdata['comment_ID'] = $comment_ID;
       }
     }
 
