@@ -101,11 +101,7 @@ class SemanticLinkbacksPlugin {
       }
     }
 
-    var_dump($commentdata['comment_type'] );
-
     $commentdata['comment_type'] = '';
-
-    var_dump($commentdata);
 
     // update comment
     wp_update_comment($commentdata);
