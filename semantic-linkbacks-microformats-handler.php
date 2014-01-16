@@ -46,6 +46,13 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 
     /*
      * likes
+     * @link http://indiewebcamp.com/repost
+     */
+    $class_mapper["repost"]      = "repost";
+    $class_mapper["repost-of"]   = "repost";
+
+    /*
+     * likes
      * @link http://indiewebcamp.com/likes
      */
     $class_mapper["like"]        = "like";
