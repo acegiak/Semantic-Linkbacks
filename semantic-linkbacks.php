@@ -29,6 +29,8 @@ class SemanticLinkbacksPlugin {
     add_action('pingback_post', array( $this, 'linkback_fix' ));
     add_action('trackback_post', array( $this, 'linkback_fix' ));
     add_action('webmention_post', array( $this, 'linkback_fix' ));
+
+    add_filter('get_comment_link', array( $this, 'get_comment_link' ), 99, 3);
   }
 
   /**
@@ -110,6 +112,22 @@ class SemanticLinkbacksPlugin {
     update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", $source );
 
     return $comment_ID;
+  }
+
+  /**
+   * replace comment url with webmention source
+   *
+   * @param string $link the link url
+   * @param obj $comment the comment object
+   * @param array $args a list of arguments to generate the final link tag
+   * @return string the webmention source or the original comment link
+   */
+  public function get_comment_link($link, $comment, $args) {
+    if ( $source = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_source', true) ) {
+      return $source;
+    }
+
+    return $link;
   }
 }
 

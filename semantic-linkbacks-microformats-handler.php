@@ -27,7 +27,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     //
     add_filter('semantic_linkbacks_commentdata', array( $this, 'generate_commentdata' ), 1, 4);
     add_filter('get_avatar', array( $this, 'get_avatar'), 11, 5);
-    add_filter('get_avatar_comment_types', array( $this, 'get_avatar_comment_types' ));
+    add_filter('get_avatar_comment_types', array( $this, 'get_avatar_comment_types'));
   }
 
   /**
