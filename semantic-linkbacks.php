@@ -10,27 +10,22 @@
 
 require_once "semantic-linkbacks-microformats-handler.php";
 
+add_action('init', array( 'SemanticLinkbacksPlugin', 'init' ));
+
 /**
  *
  */
 class SemanticLinkbacksPlugin {
   /**
-   * constructor
-   */
-  public function __construct() {
-    add_action('init', array( $this, 'init' ));
-  }
-
-  /**
    * Initialize the plugin, registering WordPess hooks.
    */
-  public function init() {
+  public static function init() {
     // hook into linkback functions to add more semantics
-    add_action('pingback_post', array( $this, 'linkback_fix' ));
-    add_action('trackback_post', array( $this, 'linkback_fix' ));
-    add_action('webmention_post', array( $this, 'linkback_fix' ));
+    add_action('pingback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
+    add_action('trackback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
+    add_action('webmention_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
 
-    add_filter('get_comment_link', array( $this, 'get_comment_link' ), 99, 3);
+    add_filter('get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3);
   }
 
   /**
@@ -38,7 +33,7 @@ class SemanticLinkbacksPlugin {
    *
    * @param int $comment_ID the comment id
    */
-  public function linkback_fix($comment_ID) {
+  public static function linkback_fix($comment_ID) {
     // return if comment_ID is empty
     if (!$comment_ID) {
       return $comment_ID;
@@ -103,13 +98,8 @@ class SemanticLinkbacksPlugin {
       }
     }
 
-    $commentdata['comment_type'] = '';
-
     // update comment
     wp_update_comment($commentdata);
-
-    // add source url as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", $source );
 
     return $comment_ID;
   }
@@ -122,13 +112,11 @@ class SemanticLinkbacksPlugin {
    * @param array $args a list of arguments to generate the final link tag
    * @return string the webmention source or the original comment link
    */
-  public function get_comment_link($link, $comment, $args) {
-    if ( $source = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_source', true) ) {
-      return $source;
+  public static function get_comment_link($link, $comment, $args) {
+    if ( $canonical = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_canonical', true) ) {
+      return $canonical;
     }
 
     return $link;
   }
 }
-
-new SemanticLinkbacksPlugin;
