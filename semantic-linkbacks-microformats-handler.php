@@ -19,7 +19,6 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     //
     add_filter('semantic_linkbacks_commentdata', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'generate_commentdata' ), 1, 4);
     add_filter('get_avatar', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'get_avatar'), 11, 5);
-    add_filter('get_avatar_comment_types', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'get_avatar_comment_types'));
   }
 
   /**
@@ -51,14 +50,14 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      */
     $class_mapper["like"]        = "like";
     $class_mapper["like-of"]     = "like";
-    
+
     /*
      * favorite
      * @link http://indiewebcamp.com/favorite
      */
     $class_mapper["favorite"]    = "favorite";
     $class_mapper["favorite-of"] = "favorite";
-    
+
     /*
      * mentions
      * @link http://indiewebcamp.com/mentions
@@ -75,23 +74,27 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
    */
   public static function get_rel_mapper() {
     $rel_mapper = array();
-    
+
     /*
      * replies
      * @link http://indiewebcamp.com/in-reply-to
      */
     $rel_mapper["in-reply-to"] = "reply";
     $rel_mapper["reply-of"]    = "reply";
-    
+
     return apply_filters("semantic_linkbacks_microformats_rel_mapper", $rel_mapper);
   }
 
   /**
+   * generate the comment data from the microformatted content
    *
+   * @param WP_Comment $commentdata the comment object
+   * @param string $target the target url
+   * @param string $html the parsed html
    */
   public static function generate_commentdata($commentdata, $target, $html) {
     global $wpdb;
-    
+
     // parse source html
     $parser = new Parser( $html );
     $mf_array = $parser->parse(true);
@@ -111,13 +114,13 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     if (empty($entry)) {
       return array();
     }
-    
+
     // save source
     $source = $canonical = $commentdata['comment_author_url'];
-    
+
     // the entry properties
     $properties = $entry['properties'];
-    
+
     // try to find some content
     // @link http://indiewebcamp.com/comments-presentation
     if (isset($properties['summary'])) {
@@ -160,21 +163,28 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
         $commentdata['comment_author_url'] = wp_slash($author['url'][0]);
       }
     }
-    
+
     // add source url as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", $source, true );
-    
+    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", esc_url_raw($source), true );
+
     // replace source with u-url
     if (isset($properties['url']) && isset($properties['url'][0])) {
       $canonical = $properties['url'][0];
     }
-    
+
     // add source url as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_canonical", $canonical, true );
-    
-    // @todo parse type
-    $type = "mention";
-    
+    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_canonical", esc_url_raw($canonical), true );
+
+    // get post type
+    $type = self::get_entry_type($target, $entry, $mf_array);
+
+    // remove "webmention" comment-type if $type is "reply"
+    if ($type == "reply") {
+      global $wpdb;
+
+      $wpdb->update( $wpdb->comments, array( 'comment_type' => '' ), array( 'comment_ID' => $commentdata["comment_ID"] ) );
+    }
+
     // add source url as comment-meta
     update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $type, true );
 
@@ -185,7 +195,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 
     return $commentdata;
   }
-  
+
   /**
    * get all h-entry items
    *
@@ -221,7 +231,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // return entries
     return $entries;
   }
-  
+
   /**
    * helper to find the correct author node
    *
@@ -245,10 +255,10 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
         }
       }
     }
-    
+
     return null;
   }
-  
+
   /**
    * helper to find the correct h-entry node
    *
@@ -284,7 +294,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
         }
       }
     }
-    
+
     // return first h-entry
     return $entries[0];
   }
@@ -321,16 +331,47 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   }
 
   /**
-   * show avatars also on pingbacks, trackbacks and webmentions
+   * check entry classes or document rels for post-type
    *
-   * @param array $types the comment_types
-   * @return array updated comment_types
+   * @param string $target the target url
+   * @param array $entry the represantative entry
+   * @param array $mf_array the document
+   * @return string the post-type
    */
-  public static function get_avatar_comment_types($types) {
-    $types[] = "pingback";
-    $types[] = "trackback";
-    $types[] = "webmention";
+  public static function get_entry_type($target, $entry, $mf_array = array()) {
+    $classes = self::get_class_mapper();
 
-    return $types;
+    // check properties for target-url
+    foreach ($entry['properties'] as $key => $values) {
+      // check u-* params
+      if ( in_array( $key, array_keys($classes) ) ) {
+        foreach ($values as $value) {
+          if ($value == $target) {
+            return $classes[$key];
+          }
+        }
+      }
+    }
+
+    // check if site has any rels
+    if (!isset($mf_array['rels'])) {
+      return "mention";
+    }
+
+    $rels = self::get_rel_mapper();
+
+    // check rels for target-url
+    foreach ($mf_array['rels'] as $key => $values) {
+      // check rel params
+      if ( in_array( $key, array_keys($rels) ) ) {
+        foreach ($values as $value) {
+          if ($value == $target) {
+            return $rels[$key];
+          }
+        }
+      }
+    }
+
+    return "mention";
   }
 }

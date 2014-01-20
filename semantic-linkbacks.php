@@ -5,7 +5,7 @@
  Description: Semantic Linkbacks for webmentions, trackbacks and pingbacks
  Author: pfefferle & acegiak
  Author URI: http://notizblog.org/
- Version: 2.0.0-dev
+ Version: 2.0.1-dev
 */
 
 require_once "semantic-linkbacks-microformats-handler.php";
@@ -25,11 +25,13 @@ class SemanticLinkbacksPlugin {
     add_action('trackback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
     add_action('webmention_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
 
+    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
+    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_simplify'), 12, 3);
     add_filter('get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3);
   }
 
   /**
-   *
+   * Nicer semantic linkbacks
    *
    * @param int $comment_ID the comment id
    */
@@ -48,7 +50,7 @@ class SemanticLinkbacksPlugin {
     }
 
     // source
-    $source = $commentdata['comment_author_url'];
+    $source = esc_url_raw($commentdata['comment_author_url']);
 
     // check if there is already a matching comment
     if ( $comments = get_comments( array('meta_key' => 'semantic_linkbacks_source', 'meta_value' => $source) ) ) {
@@ -73,7 +75,7 @@ class SemanticLinkbacksPlugin {
 
     // get remote html
     $target = get_permalink( $post['ID'] );
-    $response = wp_remote_get( $source );
+    $response = wp_remote_get( esc_url_raw(html_entity_decode($source)) );
 
     // handle errors
     if ( is_wp_error( $response ) ) {
@@ -102,6 +104,100 @@ class SemanticLinkbacksPlugin {
     wp_update_comment($commentdata);
 
     return $comment_ID;
+  }
+
+	/**
+	 * Returns an array of comment type verbs to their translated and pretty display versions
+	 *
+	 * @return array The array of translated post format names.
+	 */
+  public static function get_comment_type_verbs() {
+    $strings = array(
+      'mention'  => _x( 'mentioned', 'semantic_linkbacks' ), // Special case. any value that evals to false will be considered standard
+
+      'reply'    => _x( 'replied',   'semantic_linkbacks' ),
+      'repost'   => _x( 'reposted',  'semantic_linkbacks' ),
+      'like'     => _x( 'liked',     'semantic_linkbacks' ),
+      'favorite' => _x( 'favorited', 'semantic_linkbacks' ),
+    );
+    return $strings;
+	}
+
+	/**
+	 * Returns an array of comment type slugs to their translated and pretty display versions
+	 *
+	 * @return array The array of translated comment type names.
+	 */
+  public static function get_comment_type_strings() {
+    $strings = array(
+      'mention'  => _x( 'Mention',   'semantic_linkbacks' ), // Special case. any value that evals to false will be considered standard
+
+      'reply'    => _x( 'Reply',     'semantic_linkbacks' ),
+      'repost'   => _x( 'Repost',    'semantic_linkbacks' ),
+      'like'     => _x( 'Like',      'semantic_linkbacks' ),
+      'favorite' => _x( 'Favorite',  'semantic_linkbacks' ),
+    );
+    return $strings;
+	}
+
+  /**
+   * add cite to
+   *
+   * @param string $text the comment text
+   * @param WP_Comment $comment the comment object
+   * @param array $args a list of arguments
+   * @return string the filtered comment text
+   */
+  public static function comment_text_add_cite($text, $comment, $args) {
+    // thanks to @snarfed for the idea
+    if ($comment->comment_type == "" && $canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true)) {
+      $host = parse_url($canonical, PHP_URL_HOST);
+
+      // strip leading www, if any
+      $host = preg_replace("/^www\./", "", $host);
+      // note that WordPress's sanitization strips the class="u-url". sigh. :/ also,
+      // <cite> is one of the few elements that make it through the sanitization and
+      // is still uncommon enough that we can use it for styling.
+      $text .= '<p><small>&mdash;&nbsp;<cite><a class="u-url" href="' . $canonical . '">via ' . $host .
+                      '</a></cite></small></p>';
+    }
+
+    return $text;
+  }
+
+  /**
+   * add cite to
+   *
+   * @param string $text the comment text
+   * @param WP_Comment $comment the comment object
+   * @param array $args a list of arguments
+   * @return string the filtered comment text
+   */
+  public static function comment_text_simplify($text, $comment, $args) {
+    // only change text for pinbacks/trackbacks/webmentions
+    if ($comment->comment_type == "") {
+      return $text;
+    }
+
+    if ($comment_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true)) {
+      $post_format = get_post_format($comment->comment_post_ID);
+
+      if (!$post_format) {
+        $post_format = "Article";
+      } else {
+        $post_formatstrings = get_post_format_strings();
+        $post_format = $post_formatstrings[$post_format];
+      }
+
+      $comment_type_verbs = self::get_comment_type_verbs();
+      $comment_type = $comment_type_verbs[$comment_type];
+
+      $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
+
+      $text = get_comment_author_link($comment->comment_ID) . ' <a href="'.$url.'">' . $comment_type . '</a> your ' . $post_format;
+    }
+
+    return $text;
   }
 
   /**
