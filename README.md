@@ -24,7 +24,7 @@ The IndieWeb community defines several types of feedback:
 
 ## Changelog
 
-Project maintined on github at [pfefferle/wordpress-semantic-pingbacks](https://github.com/pfefferle/wordpress-semantic-pingbacks).
+Project maintined on github at [pfefferle/wordpress-semantic-linkbacks](https://github.com/pfefferle/wordpress-semantic-linkbacks).
 
 ### 2.0.1
 

@@ -6,14 +6,14 @@ use Mf2\Parser;
 add_action('init', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'init' ));
 
 /**
- * @author Matthias Pfefferle
- *
- * provides a microformats handler for the "semantic linkbacks"
+ * provides a microformats handler for the semantic linkbacks
  * WordPress plugin
+ *
+ * @author Matthias Pfefferle
  */
 class SemanticLinkbacksPlugin_MicroformatsHandler {
   /**
-   * Initialize the plugin, registering WordPess hooks.
+   * initialize the plugin, registering WordPess hooks.
    */
   public static function init() {
     //
@@ -134,10 +134,10 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // set the right date
     if (isset($properties['published'])) {
       $time = strtotime($properties['published'][0]);
-      $commentdata['comment_date'] = date("Y-m-d H:i:s", $time);
+      $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
     } elseif (isset($properties['updated'])) {
       $time = strtotime($properties['updated'][0]);
-      $commentdata['comment_date'] = date("Y-m-d H:i:s", $time);
+      $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
     }
 
     $author = null;

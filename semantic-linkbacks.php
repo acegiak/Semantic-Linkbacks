@@ -13,7 +13,9 @@ require_once "semantic-linkbacks-microformats-handler.php";
 add_action('init', array( 'SemanticLinkbacksPlugin', 'init' ));
 
 /**
+ * semantic linkbacks class
  *
+ * @author Matthias Pfefferle
  */
 class SemanticLinkbacksPlugin {
   /**
@@ -26,12 +28,12 @@ class SemanticLinkbacksPlugin {
     add_action('webmention_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
 
     add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
-    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_simplify'), 12, 3);
+    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_excerpt'), 12, 3);
     add_filter('get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3);
   }
 
   /**
-   * Nicer semantic linkbacks
+   * nicer semantic linkbacks
    *
    * @param int $comment_ID the comment id
    */
@@ -107,7 +109,7 @@ class SemanticLinkbacksPlugin {
   }
 
 	/**
-	 * Returns an array of comment type verbs to their translated and pretty display versions
+	 * returns an array of comment type verbs to their translated and pretty display versions
 	 *
 	 * @return array The array of translated post format names.
 	 */
@@ -124,7 +126,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * Returns an array of comment type slugs to their translated and pretty display versions
+	 * returns an array of comment type slugs to their translated and pretty display versions
 	 *
 	 * @return array The array of translated comment type names.
 	 */
@@ -141,14 +143,19 @@ class SemanticLinkbacksPlugin {
 	}
 
   /**
-   * add cite to
+   * add cite to "reply"s
    *
    * @param string $text the comment text
    * @param WP_Comment $comment the comment object
    * @param array $args a list of arguments
    * @return string the filtered comment text
    */
-  public static function comment_text_add_cite($text, $comment, $args) {
+  public static function comment_text_add_cite($text, $comment = null, $args = array()) {
+    // only change text for pinbacks/trackbacks/webmentions
+    if (!$comment) {
+      return $text;
+    }
+
     // thanks to @snarfed for the idea
     if ($comment->comment_type == "" && $canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true)) {
       $host = parse_url($canonical, PHP_URL_HOST);
@@ -162,46 +169,61 @@ class SemanticLinkbacksPlugin {
                       '</a></cite></small></p>';
     }
 
-    return $text;
+    return apply_filters("semantic_linkbacks_cite", $text);
   }
 
   /**
-   * add cite to
+   * generate excerpt for all types except "reply"
    *
    * @param string $text the comment text
    * @param WP_Comment $comment the comment object
    * @param array $args a list of arguments
    * @return string the filtered comment text
    */
-  public static function comment_text_simplify($text, $comment, $args) {
+  public static function comment_text_excerpt($text, $comment = null, $args = array()) {
     // only change text for pinbacks/trackbacks/webmentions
-    if ($comment->comment_type == "") {
+    if (!$comment || $comment->comment_type == "") {
       return $text;
     }
 
+    // check comment type
     if ($comment_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true)) {
       $post_format = get_post_format($comment->comment_post_ID);
 
-      if (!$post_format) {
+      // replace "standard" with "Article"
+      if (!$post_format || $post_format == "standard") {
         $post_format = "Article";
       } else {
         $post_formatstrings = get_post_format_strings();
+        // get the "nice" name
         $post_format = $post_formatstrings[$post_format];
       }
 
+      // generate the verb, for example "mentioned" or "liked"
       $comment_type_verbs = self::get_comment_type_verbs();
       $comment_type = $comment_type_verbs[$comment_type];
 
+      // get URL canonical url...
       $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
+      // ...or fall back to source
+      if (!$url) {
+        $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
+      }
 
-      $text = get_comment_author_link($comment->comment_ID) . ' <a href="'.$url.'">' . $comment_type . '</a> your ' . $post_format;
+      // parse host
+      $host = parse_url($url, PHP_URL_HOST);
+      // strip leading www, if any
+      $host = preg_replace("/^www\./", "", $host);
+
+      // generate output
+      $text = get_comment_author_link($comment->comment_ID) . ' ' . $comment_type . ' your ' . $post_format . ' on  <a href="'.$url.'">' . $host . '</a>';
     }
 
-    return $text;
+    return apply_filters("semantic_linkbacks_excerpt", $text);
   }
 
   /**
-   * replace comment url with webmention source
+   * replace comment url with canonical url
    *
    * @param string $link the link url
    * @param obj $comment the comment object
