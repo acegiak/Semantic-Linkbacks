@@ -134,10 +134,10 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // set the right date
     if (isset($properties['published'])) {
       $time = strtotime($properties['published'][0]);
-      $commentdata['comment_date'] = date("Y-m-d H:i:s", $time);
+      $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
     } elseif (isset($properties['updated'])) {
       $time = strtotime($properties['updated'][0]);
-      $commentdata['comment_date'] = date("Y-m-d H:i:s", $time);
+      $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
     }
 
     $author = null;
