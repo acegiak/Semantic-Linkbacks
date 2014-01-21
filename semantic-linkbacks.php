@@ -26,7 +26,7 @@ class SemanticLinkbacksPlugin {
     add_action('webmention_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
 
     add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
-    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_simplify'), 12, 3);
+    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_excerpt'), 12, 3);
     add_filter('get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3);
   }
 
@@ -148,7 +148,12 @@ class SemanticLinkbacksPlugin {
    * @param array $args a list of arguments
    * @return string the filtered comment text
    */
-  public static function comment_text_add_cite($text, $comment, $args) {
+  public static function comment_text_add_cite($text, $comment = null, $args = array()) {
+    // only change text for pinbacks/trackbacks/webmentions
+    if (!$comment) {
+      return $text;
+    }
+
     // thanks to @snarfed for the idea
     if ($comment->comment_type == "" && $canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true)) {
       $host = parse_url($canonical, PHP_URL_HOST);
@@ -162,7 +167,7 @@ class SemanticLinkbacksPlugin {
                       '</a></cite></small></p>';
     }
 
-    return $text;
+    return apply_filters("semantic_linkbacks_cite", $text);
   }
 
   /**
@@ -173,9 +178,9 @@ class SemanticLinkbacksPlugin {
    * @param array $args a list of arguments
    * @return string the filtered comment text
    */
-  public static function comment_text_simplify($text, $comment, $args) {
+  public static function comment_text_excerpt($text, $comment = null, $args = array()) {
     // only change text for pinbacks/trackbacks/webmentions
-    if ($comment->comment_type == "") {
+    if (!$comment || $comment->comment_type == "") {
       return $text;
     }
 
@@ -194,10 +199,19 @@ class SemanticLinkbacksPlugin {
 
       $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
 
-      $text = get_comment_author_link($comment->comment_ID) . ' <a href="'.$url.'">' . $comment_type . '</a> your ' . $post_format;
+      if (!$url) {
+        $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
+      }
+
+      $host = parse_url($url, PHP_URL_HOST);
+
+      // strip leading www, if any
+      $host = preg_replace("/^www\./", "", $host);
+
+      $text = get_comment_author_link($comment->comment_ID) . ' ' . $comment_type . ' your ' . $post_format . ' on  <a href="'.$url.'">' . $host . '</a>';
     }
 
-    return $text;
+    return apply_filters("semantic_linkbacks_excerpt", $text);
   }
 
   /**
