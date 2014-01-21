@@ -269,15 +269,26 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function get_representative_entry( $entries, $target ) {
     // iterate array
     foreach ($entries as $entry) {
-      // @todo add p-in-reply-to context
-
       // check properties
       if ( isset( $entry['properties'] ) ) {
         // check properties if target urls was mentioned
         foreach ($entry['properties'] as $key => $values) {
-          foreach ($values as $value) {
-            if ($value == $target) {
-              return $entry;
+          // check "normal" links
+          if (in_array($target, $values)) {
+            return $entry;
+          }
+
+          // iterate in-reply-tos
+          foreach ($values as $obj) {
+            // check if reply is a "cite"
+            if (isset($obj['type']) && in_array('h-cite', $obj['type'])) {
+              // check url
+              if (isset($obj['properties']) && isset($obj['properties']['url'])) {
+                // check target
+                if (in_array($target, $obj['properties']['url'])) {
+                  return $entry;
+                }
+              }
             }
           }
         }
@@ -341,13 +352,34 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function get_entry_type($target, $entry, $mf_array = array()) {
     $classes = self::get_class_mapper();
 
+    // check in-reply-context
+    if (isset($entry['properties']['in-reply-to']) && is_array($entry['properties']['in-reply-to'])) {
+      // iterate in-reply-tos
+      foreach ($entry['properties']['in-reply-to'] as $obj) {
+
+      }
+    }
+
     // check properties for target-url
     foreach ($entry['properties'] as $key => $values) {
       // check u-* params
       if ( in_array( $key, array_keys($classes) ) ) {
-        foreach ($values as $value) {
-          if ($value == $target) {
-            return $classes[$key];
+        // check "normal" links
+        if (in_array($target, $values)) {
+          return $classes[$key];
+        }
+
+        // iterate in-reply-tos
+        foreach ($values as $obj) {
+          // check if reply is a "cite"
+          if (isset($obj['type']) && in_array('h-cite', $obj['type'])) {
+            // check url
+            if (isset($obj['properties']) && isset($obj['properties']['url'])) {
+              // check target
+              if (in_array($target, $obj['properties']['url'])) {
+                return $classes[$key];
+              }
+            }
           }
         }
       }
