@@ -6,14 +6,14 @@ use Mf2\Parser;
 add_action('init', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'init' ));
 
 /**
- * @author Matthias Pfefferle
- *
- * provides a microformats handler for the "semantic linkbacks"
+ * provides a microformats handler for the semantic linkbacks
  * WordPress plugin
+ *
+ * @author Matthias Pfefferle
  */
 class SemanticLinkbacksPlugin_MicroformatsHandler {
   /**
-   * Initialize the plugin, registering WordPess hooks.
+   * initialize the plugin, registering WordPess hooks.
    */
   public static function init() {
     //
