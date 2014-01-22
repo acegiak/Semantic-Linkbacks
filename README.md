@@ -40,4 +40,5 @@ Project maintined on github at [pfefferle/wordpress-semantic-linkbacks](https://
 
 * Pelle Wessman ([@voxpelli](https://github.com/voxpelli)) for his awesome [WebMention test-pinger](https://github.com/voxpelli/node-webmention-testpinger)
 * Ryan Barrett ([@snarfed](https://github.com/snarfed)) for his feedback
+* Barnaby Walters ([@barnabywalters](https://github.com/barnabywalters)) for his awesome [mf2 parser](https://github.com/indieweb/php-mf2)
 * ([@acegiak](https://github.com/acegiak)) for the initial plugin

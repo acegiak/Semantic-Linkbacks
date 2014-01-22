@@ -102,7 +102,6 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // get all "relevant" entries
     $entries = self::get_entries($mf_array);
 
-    // check if there are any entries
     if (empty($entries)) {
       return array();
     }
@@ -110,12 +109,11 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // get the entry of interest
     $entry = self::get_representative_entry($entries, $target);
 
-    // check if there is a representative entry
     if (empty($entry)) {
       return array();
     }
 
-    // save source
+    // add source
     $source = $canonical = $commentdata['comment_author_url'];
 
     // the entry properties
@@ -167,12 +165,12 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // add source url as comment-meta
     update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", esc_url_raw($source), true );
 
-    // replace source with u-url
+    // set canonical url (u-url)
     if (isset($properties['url']) && isset($properties['url'][0])) {
       $canonical = $properties['url'][0];
     }
 
-    // add source url as comment-meta
+    // add canonical url as comment-meta
     update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_canonical", esc_url_raw($canonical), true );
 
     // get post type
@@ -185,9 +183,10 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
       $wpdb->update( $wpdb->comments, array( 'comment_type' => '' ), array( 'comment_ID' => $commentdata["comment_ID"] ) );
     }
 
-    // add source url as comment-meta
+    // add type as comment-meta
     update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $type, true );
 
+    // check photo
     if (isset($author['photo'])) {
       // add photo url as comment-meta
       update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_avatar", $author['photo'][0], true );
@@ -269,15 +268,26 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function get_representative_entry( $entries, $target ) {
     // iterate array
     foreach ($entries as $entry) {
-      // @todo add p-in-reply-to context
-
       // check properties
       if ( isset( $entry['properties'] ) ) {
         // check properties if target urls was mentioned
         foreach ($entry['properties'] as $key => $values) {
-          foreach ($values as $value) {
-            if ($value == $target) {
-              return $entry;
+          // check "normal" links
+          if (in_array($target, $values)) {
+            return $entry;
+          }
+
+          // check included h-* formats and their links
+          foreach ($values as $obj) {
+            // check if reply is a "cite"
+            if (isset($obj['type']) && in_array('h-cite', $obj['type'])) {
+              // check url
+              if (isset($obj['properties']) && isset($obj['properties']['url'])) {
+                // check target
+                if (in_array($target, $obj['properties']['url'])) {
+                  return $entry;
+                }
+              }
             }
           }
         }
@@ -314,7 +324,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
       return $avatar;
     }
 
-    // check if comment has a webfinger-avatar
+    // check if comment has an avatar
     $sl_avatar = get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true);
 
     if (!$sl_avatar) {
@@ -341,13 +351,34 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function get_entry_type($target, $entry, $mf_array = array()) {
     $classes = self::get_class_mapper();
 
+    // check in-reply-context
+    if (isset($entry['properties']['in-reply-to']) && is_array($entry['properties']['in-reply-to'])) {
+      // iterate in-reply-tos
+      foreach ($entry['properties']['in-reply-to'] as $obj) {
+
+      }
+    }
+
     // check properties for target-url
     foreach ($entry['properties'] as $key => $values) {
       // check u-* params
       if ( in_array( $key, array_keys($classes) ) ) {
-        foreach ($values as $value) {
-          if ($value == $target) {
-            return $classes[$key];
+        // check "normal" links
+        if (in_array($target, $values)) {
+          return $classes[$key];
+        }
+
+        // iterate in-reply-tos
+        foreach ($values as $obj) {
+          // check if reply is a "cite"
+          if (isset($obj['type']) && in_array('h-cite', $obj['type'])) {
+            // check url
+            if (isset($obj['properties']) && isset($obj['properties']['url'])) {
+              // check target
+              if (in_array($target, $obj['properties']['url'])) {
+                return $classes[$key];
+              }
+            }
           }
         }
       }
