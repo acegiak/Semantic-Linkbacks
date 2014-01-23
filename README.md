@@ -22,6 +22,46 @@ The IndieWeb community defines several types of feedback:
 * Favorites: <http://indiewebcamp.com/favorite>
 * Classic "Mentions": <http://indiewebcamp.com/mentions>
 
+### How to add RDFa or Schema.org support
+
+If you want to write your own parser you have to hook up the `semantic_linkbacks_commentdata` filter and update the array-fields.
+
+The comment-array is a classic [WordPress comment](http://codex.wordpress.org/get_comment#Return) with some extra-fields. Here is an example:
+
+```
+Array
+(
+    [comment_ID] => 433
+    [comment_post_ID] => 1060
+    [comment_author] => Matthias Pfefferle
+    [comment_author_email] =>
+    [comment_author_url] => https://notizblog.org/author/matthias-pfefferle/
+    [comment_author_IP] => 127.0.0.1
+    [comment_date] => 2014-01-16 11:11:26
+    [comment_date_gmt] => 2014-01-23 12:12:22
+    [comment_content] => Bridgy ist ein WebMention Proxy für Twitter, Facebook und Google+. Es sammelt comments, shares, likes und re-tweets und leitet sie an die entsprechenden Links weiter.
+Bridgy sends webmentions for comments, likes, and reshares on Facebook, Twitter, Google+, and Instagram. Bridgy notices when you post links, watches for activity on those posts, and sends them back to your site as webmentions. It also serves them as microformats2 for webmention targets to read.
+Großartige Idee!
+Wer sein eigenes Bridgy betreiben will… der Code ist Open Source!
+    [comment_karma] => 0
+    [comment_approved] => 0
+    [comment_agent] => WebMention-Testsuite (https://github.com/voxpelli/node-webmention-testpinger)
+    [comment_type] => pingback
+    [comment_parent] => 0
+    [user_id] => 0
+    [_canonical] => https://notizblog.org/2014/01/16/bridgy-webmentions-fuer-twitter-und-facebook/
+    [_type] => reply
+    [_photo] => https://secure.gravatar.com/avatar/b36983a5651df2c413e264ad4d5cc1a1?s=40&d=https%3A%2F%2Fsecure.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D40&r=G
+)
+```
+
+The extra fields are:
+
+* `$commentdata['_canonical']` for the canonical source url
+* `$commentdata['_type']` for the comment type. The plugin currently supports the following types: `mention`(default), `reply`, `repost`, `like` and `favorite`
+* `$commentdata['_photo']` for the author avatar
+
+
 ## Changelog
 
 Project maintined on github at [pfefferle/wordpress-semantic-linkbacks](https://github.com/pfefferle/wordpress-semantic-linkbacks).

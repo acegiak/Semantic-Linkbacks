@@ -27,6 +27,7 @@ class SemanticLinkbacksPlugin {
     add_action('trackback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
     add_action('webmention_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
 
+    add_filter('get_avatar', array( 'SemanticLinkbacksPlugin', 'get_avatar'), 11, 5);
     add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
     add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_excerpt'), 12, 3);
     add_filter('get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3);
@@ -87,19 +88,39 @@ class SemanticLinkbacksPlugin {
     // get HTML code of source url
     $html = wp_remote_retrieve_body( $response );
 
+    // add source url as comment-meta
+    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", esc_url_raw($commentdata["comment_author_url"]), true );
+
     // adds a hook to enable some other semantic handlers for example schema.org
     $commentdata = apply_filters("semantic_linkbacks_commentdata", $commentdata, $target, $html);
 
+    error_log(print_r($commentdata, true)."\n", 3, dirname(__FILE__) . "/log.txt");
+
+    // check if comment-data is empty
     if (empty($commentdata)) {
       return $comment_ID;
     }
 
-    // check if there is a parent comment
-    if ( !isset($commentdata['comment_parent']) && $query = parse_url($target, PHP_URL_QUERY) ) {
-      parse_str($query);
-      if (isset($replytocom) && get_comment($replytocom)) {
-        $commentdata['comment_parent'] = $replytocom;
+    if (isset($commentdata['_canonical'])) {
+      // add canonical url as comment-meta
+      update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_canonical", esc_url_raw($commentdata['_canonical']), true );
+    }
+
+    if (isset($commentdata['_type'])) {
+      // add type as comment-meta
+      update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $commentdata['_type'], true );
+
+      // remove "webmention" comment-type if $type is "reply"
+      if (in_array($commentdata['_type'], apply_filters("semantic_linkbacks_comment_types", array("reply")))) {
+        global $wpdb;
+
+        $wpdb->update( $wpdb->comments, array( 'comment_type' => '' ), array( 'comment_ID' => $commentdata["comment_ID"] ) );
       }
+    }
+
+    if (isset($commentdata['_photo'])) {
+      // add photo url as comment-meta
+      update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_avatar", esc_url_raw($commentdata['_photo']), true );
     }
 
     // update comment
@@ -187,39 +208,74 @@ class SemanticLinkbacksPlugin {
     }
 
     // check comment type
-    if ($comment_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true)) {
-      $post_format = get_post_format($comment->comment_post_ID);
+    $comment_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true);
 
-      // replace "standard" with "Article"
-      if (!$post_format || $post_format == "standard") {
-        $post_format = "Article";
-      } else {
-        $post_formatstrings = get_post_format_strings();
-        // get the "nice" name
-        $post_format = $post_formatstrings[$post_format];
-      }
-
-      // generate the verb, for example "mentioned" or "liked"
-      $comment_type_verbs = self::get_comment_type_verbs();
-      $comment_type = $comment_type_verbs[$comment_type];
-
-      // get URL canonical url...
-      $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
-      // ...or fall back to source
-      if (!$url) {
-        $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
-      }
-
-      // parse host
-      $host = parse_url($url, PHP_URL_HOST);
-      // strip leading www, if any
-      $host = preg_replace("/^www\./", "", $host);
-
-      // generate output
-      $text = get_comment_author_link($comment->comment_ID) . ' ' . $comment_type . ' your ' . $post_format . ' on  <a href="'.$url.'">' . $host . '</a>';
+    if (!$comment_type || !in_array($comment_type, array_keys(self::get_comment_type_strings()))) {
+      $comment_type = "mention";
     }
 
+    $post_format = get_post_format($comment->comment_post_ID);
+
+    // replace "standard" with "Article"
+    if (!$post_format || $post_format == "standard") {
+      $post_format = "Article";
+    } else {
+      $post_formatstrings = get_post_format_strings();
+      // get the "nice" name
+      $post_format = $post_formatstrings[$post_format];
+    }
+
+    // generate the verb, for example "mentioned" or "liked"
+    $comment_type_verbs = self::get_comment_type_verbs();
+    $comment_type = $comment_type_verbs[$comment_type];
+
+    // get URL canonical url...
+    $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
+    // ...or fall back to source
+    if (!$url) {
+      $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
+    }
+
+    // parse host
+    $host = parse_url($url, PHP_URL_HOST);
+    // strip leading www, if any
+    $host = preg_replace("/^www\./", "", $host);
+
+    // generate output
+    $text = get_comment_author_link($comment->comment_ID) . ' ' . $comment_type . ' your ' . $post_format . ' on  <a href="'.$url.'">' . $host . '</a>';
+
     return apply_filters("semantic_linkbacks_excerpt", $text);
+  }
+
+  /**
+   * replaces the default avatar with the webmention uf2 photo
+   *
+   * @param string $avatar the avatar-url
+   * @param int|string|object $id_or_email A user ID, email address, or comment object
+   * @param int $size Size of the avatar image
+   * @param string $default URL to a default image to use if no avatar is available
+   * @param string $alt Alternative text to use in image tag. Defaults to blank
+   * @return string new avatar-url
+   */
+  public static function get_avatar($avatar, $id_or_email, $size, $default = '', $alt = '') {
+    if (!is_object($id_or_email) || !isset($id_or_email->comment_type) || !get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true)) {
+      return $avatar;
+    }
+
+    // check if comment has an avatar
+    $sl_avatar = get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true);
+
+    if (!$sl_avatar) {
+      return $avatar;
+    }
+
+    if ( false === $alt )
+      $safe_alt = '';
+    else
+      $safe_alt = esc_attr( $alt );
+
+    $avatar = "<img alt='{$safe_alt}' src='{$sl_avatar}' class='avatar avatar-{$size} photo avatar-semantic-linkbacks' height='{$size}' width='{$size}' />";
+    return $avatar;
   }
 
   /**

@@ -18,7 +18,6 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function init() {
     //
     add_filter('semantic_linkbacks_commentdata', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'generate_commentdata' ), 1, 4);
-    add_filter('get_avatar', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'get_avatar'), 11, 5);
   }
 
   /**
@@ -124,7 +123,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     if (isset($properties['summary'])) {
       $commentdata['comment_content'] = wp_slash($properties['summary'][0]);
     } elseif (isset($properties['content'])) {
-      $commentdata['comment_content'] = wp_slash($properties['content'][0]['html']);
+      $commentdata['comment_content'] = wp_filter_kses($properties['content'][0]['html']);
     } elseif (isset($properties['name'])) {
       $commentdata['comment_content'] = wp_slash($properties['name'][0]);
     }
@@ -162,34 +161,18 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
       }
     }
 
-    // add source url as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", esc_url_raw($source), true );
-
     // set canonical url (u-url)
     if (isset($properties['url']) && isset($properties['url'][0])) {
-      $canonical = $properties['url'][0];
+      $commentdata['_canonical'] = $properties['url'][0];
     }
-
-    // add canonical url as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_canonical", esc_url_raw($canonical), true );
 
     // get post type
-    $type = self::get_entry_type($target, $entry, $mf_array);
-
-    // remove "webmention" comment-type if $type is "reply"
-    if ($type == "reply") {
-      global $wpdb;
-
-      $wpdb->update( $wpdb->comments, array( 'comment_type' => '' ), array( 'comment_ID' => $commentdata["comment_ID"] ) );
-    }
-
-    // add type as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $type, true );
+    $commentdata['_type'] = self::get_entry_type($target, $entry, $mf_array);
 
     // check photo
     if (isset($author['photo'])) {
       // add photo url as comment-meta
-      update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_avatar", $author['photo'][0], true );
+      $commentdata['_photo'] = $author['photo'][0];
     }
 
     return $commentdata;
@@ -307,37 +290,6 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 
     // return first h-entry
     return $entries[0];
-  }
-
-  /**
-   * replaces the default avatar with the webmention uf2 photo
-   *
-   * @param string $avatar the avatar-url
-   * @param int|string|object $id_or_email A user ID, email address, or comment object
-   * @param int $size Size of the avatar image
-   * @param string $default URL to a default image to use if no avatar is available
-   * @param string $alt Alternative text to use in image tag. Defaults to blank
-   * @return string new avatar-url
-   */
-  public static function get_avatar($avatar, $id_or_email, $size, $default = '', $alt = '') {
-    if (!is_object($id_or_email) || !isset($id_or_email->comment_type) || !get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true)) {
-      return $avatar;
-    }
-
-    // check if comment has an avatar
-    $sl_avatar = get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true);
-
-    if (!$sl_avatar) {
-      return $avatar;
-    }
-
-    if ( false === $alt )
-      $safe_alt = '';
-    else
-      $safe_alt = esc_attr( $alt );
-
-    $avatar = "<img alt='{$safe_alt}' src='{$sl_avatar}' class='avatar avatar-{$size} photo avatar-semantic-linkbacks' height='{$size}' width='{$size}' />";
-    return $avatar;
   }
 
   /**
