@@ -113,26 +113,26 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     }
 
     // add source
-    $source = $canonical = $commentdata['comment_author_url'];
+    $source = $commentdata['comment_author_url'];
 
     // the entry properties
     $properties = $entry['properties'];
 
     // try to find some content
     // @link http://indiewebcamp.com/comments-presentation
-    if (isset($properties['summary'])) {
+    if (self::check_mf_attr('summary', $properties)) {
       $commentdata['comment_content'] = wp_slash($properties['summary'][0]);
-    } elseif (isset($properties['content'])) {
+    } elseif (self::check_mf_attr('content', $properties)) {
       $commentdata['comment_content'] = wp_filter_kses($properties['content'][0]['html']);
-    } elseif (isset($properties['name'])) {
+    } elseif (self::check_mf_attr('name', $properties)) {
       $commentdata['comment_content'] = wp_slash($properties['name'][0]);
     }
 
     // set the right date
-    if (isset($properties['published'])) {
+    if (self::check_mf_attr('published', $properties)) {
       $time = strtotime($properties['published'][0]);
       $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
-    } elseif (isset($properties['updated'])) {
+    } elseif (self::check_mf_attr('updated', $properties)) {
       $time = strtotime($properties['updated'][0]);
       $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
     }
@@ -143,37 +143,37 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     if ( isset($properties['author']) && isset($properties['author'][0]['properties']) ) {
       $author = $properties['author'][0]['properties'];
     } else {
-      $author = self::get_representative_author($mf_array, $properties, $target);
+      $author = self::get_representative_author($mf_array, $properties, $source);
     }
 
     // if author is present use the informations for the comment
     if ($author) {
-      if (isset($author['name'])) {
+      if (self::check_mf_attr('name', $author)) {
         $commentdata['comment_author'] = wp_slash($author['name'][0]);
       }
 
-      if (isset($author['email'])) {
+      if (self::check_mf_attr('email', $author)) {
         $commentdata['comment_author_email'] = wp_slash($author['email'][0]);
       }
 
-      if (isset($author['url'])) {
+      if (self::check_mf_attr('url', $author)) {
         $commentdata['comment_author_url'] = wp_slash($author['url'][0]);
+      }
+
+      if (self::check_mf_attr('photo', $author)) {
+        $commentdata['_photo'] = $author['photo'][0];
       }
     }
 
     // set canonical url (u-url)
-    if (isset($properties['url']) && isset($properties['url'][0])) {
+    if (self::check_mf_attr('url', $properties)) {
       $commentdata['_canonical'] = $properties['url'][0];
+    } else {
+      $commentdata['_canonical'] = $source;
     }
 
     // get post type
     $commentdata['_type'] = self::get_entry_type($target, $entry, $mf_array);
-
-    // check photo
-    if (isset($author['photo'])) {
-      // add photo url as comment-meta
-      $commentdata['_photo'] = $author['photo'][0];
-    }
 
     return $commentdata;
   }
@@ -221,7 +221,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
    * @param string $source the source url
    * @return array|null the h-card node or null
    */
-  public static function get_representative_author( $mf_array, $source ) {
+  public static function get_representative_author( $mf_array, $properties, $source ) {
     foreach ($mf_array["items"] as $mf) {
       if ( isset( $mf["type"] ) ) {
         if ( in_array( "h-card", $mf["type"] ) ) {
@@ -356,5 +356,21 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     }
 
     return "mention";
+  }
+
+  /**
+   * checks if $node has $key
+   *
+   * @param string $key the array key to check
+   * @param array $node the array to be checked
+   *
+   * @return boolean
+   */
+  public static function check_mf_attr($key, $node) {
+    if (isset($node[$key]) && isset($node[$key][0])) {
+      return true;
+    }
+
+    return false;
   }
 }

@@ -94,8 +94,6 @@ class SemanticLinkbacksPlugin {
     // adds a hook to enable some other semantic handlers for example schema.org
     $commentdata = apply_filters("semantic_linkbacks_commentdata", $commentdata, $target, $html);
 
-    error_log(print_r($commentdata, true)."\n", 3, dirname(__FILE__) . "/log.txt");
-
     // check if comment-data is empty
     if (empty($commentdata)) {
       return $comment_ID;
