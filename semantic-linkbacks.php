@@ -31,6 +31,7 @@ class SemanticLinkbacksPlugin {
     add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
     add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_excerpt'), 12, 3);
     add_filter('get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3);
+    add_filter('get_avatar_comment_types', array( 'SemanticLinkbacksPlugin', 'get_avatar_comment_types' ));
   }
 
   /**
@@ -290,5 +291,20 @@ class SemanticLinkbacksPlugin {
     }
 
     return $link;
+  }
+
+  /**
+   * show avatars also on trackbacks and pingbacks
+   *
+   * @param array $types list of avatar enabled comment types
+   *
+   * @return array show avatars also on trackbacks and pingbacks
+   */
+  public static function get_avatar_comment_types($types) {
+    $types[] = 'pingback';
+    $types[] = 'trackback';
+    $types[] = 'webmention';
+
+    return $types;
   }
 }
