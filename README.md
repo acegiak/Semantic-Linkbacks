@@ -71,6 +71,7 @@ Project maintined on github at [pfefferle/wordpress-semantic-linkbacks](https://
 * "via" links for indieweb "reply"s (thanks to @snarfed for the idea)
 * simplified output for all other indieweb "comment" types
 * better parser (thanks to voxpelly for his test-pinger)
+* now ready to use in a bundle
 
 ### 2.0.0
 

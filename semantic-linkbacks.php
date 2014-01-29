@@ -8,6 +8,8 @@
  Version: 2.0.1-dev
 */
 
+if (!class_exists("SemanticLinkbacksPlugin")) :
+
 require_once "semantic-linkbacks-microformats-handler.php";
 
 add_action('init', array( 'SemanticLinkbacksPlugin', 'init' ));
@@ -241,7 +243,7 @@ class SemanticLinkbacksPlugin {
     $host = preg_replace("/^www\./", "", $host);
 
     // generate output
-    $text = get_comment_author_link($comment->comment_ID) . ' ' . $comment_type . ' your ' . $post_format . ' on  <a href="'.$url.'">' . $host . '</a>';
+    $text = get_comment_author_link($comment->comment_ID) . ' ' . $comment_type . ' this ' . $post_format . ' on  <a href="'.$url.'">' . $host . '</a>';
 
     return apply_filters("semantic_linkbacks_excerpt", $text);
   }
@@ -308,3 +310,5 @@ class SemanticLinkbacksPlugin {
     return $types;
   }
 }
+
+endif;
