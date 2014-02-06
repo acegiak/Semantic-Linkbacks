@@ -94,8 +94,11 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function generate_commentdata($commentdata, $target, $html) {
     global $wpdb;
 
+    // add source
+    $source = $commentdata['comment_author_url'];
+
     // parse source html
-    $parser = new Parser( $html );
+    $parser = new Parser( $html, $source );
     $mf_array = $parser->parse(true);
 
     // get all "relevant" entries
@@ -111,9 +114,6 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     if (empty($entry)) {
       return array();
     }
-
-    // add source
-    $source = $commentdata['comment_author_url'];
 
     // the entry properties
     $properties = $entry['properties'];
