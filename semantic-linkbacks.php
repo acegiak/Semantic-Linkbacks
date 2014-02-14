@@ -81,7 +81,7 @@ class SemanticLinkbacksPlugin {
 
     // get remote html
     $target = get_permalink( $post['ID'] );
-    $response = wp_remote_get( esc_url_raw(html_entity_decode($source)) );
+    $response = wp_remote_get( esc_url_raw(html_entity_decode($source)), array('timeout' => 100) );
 
     // handle errors
     if ( is_wp_error( $response ) ) {
@@ -102,12 +102,12 @@ class SemanticLinkbacksPlugin {
       return $comment_ID;
     }
 
-    if (isset($commentdata['_canonical'])) {
+    if (isset($commentdata['_canonical']) && !empty($commentdata['_canonical'])) {
       // add canonical url as comment-meta
       update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_canonical", esc_url_raw($commentdata['_canonical']), true );
     }
 
-    if (isset($commentdata['_type'])) {
+    if (isset($commentdata['_type']) && !empty($commentdata['_type'])) {
       // add type as comment-meta
       update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_type", $commentdata['_type'], true );
 
@@ -119,7 +119,7 @@ class SemanticLinkbacksPlugin {
       }
     }
 
-    if (isset($commentdata['_photo'])) {
+    if (isset($commentdata['_photo']) && !empty($commentdata['_photo'])) {
       // add photo url as comment-meta
       update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_avatar", esc_url_raw($commentdata['_photo']), true );
     }
@@ -204,7 +204,7 @@ class SemanticLinkbacksPlugin {
    */
   public static function comment_text_excerpt($text, $comment = null, $args = array()) {
     // only change text for pinbacks/trackbacks/webmentions
-    if (!$comment || $comment->comment_type == "") {
+    if (!$comment || $comment->comment_type == "" || !get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true)) {
       return $text;
     }
 
