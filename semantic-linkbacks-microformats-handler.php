@@ -67,7 +67,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      * rsvp
      * @link http://indiewebcamp.com/rsvp
      */
-    $class_mapper["rsvp"]     = "rsvp";
+    $class_mapper["rsvp"]        = "rsvp";
 
     return apply_filters("semantic_linkbacks_microformats_class_mapper", $class_mapper);
   }
@@ -309,14 +309,6 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function get_entry_type($target, $entry, $mf_array = array()) {
     $classes = self::get_class_mapper();
 
-    // check in-reply-context
-    if (isset($entry['properties']['in-reply-to']) && is_array($entry['properties']['in-reply-to'])) {
-      // iterate in-reply-tos
-      foreach ($entry['properties']['in-reply-to'] as $obj) {
-
-      }
-    }
-
     // check properties for target-url
     foreach ($entry['properties'] as $key => $values) {
       // check u-* params
@@ -328,8 +320,8 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 
         // iterate in-reply-tos
         foreach ($values as $obj) {
-          // check if reply is a "cite"
-          if (isset($obj['type']) && in_array('h-cite', $obj['type'])) {
+          // check if reply is a "cite" or "entry"
+          if (isset($obj['type']) && array_intersect(array('h-cite', 'h-entry'), $obj['type'])) {
             // check url
             if (isset($obj['properties']) && isset($obj['properties']['url'])) {
               // check target
