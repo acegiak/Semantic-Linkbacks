@@ -275,7 +275,7 @@ class SemanticLinkbacksPlugin {
     else
       $safe_alt = esc_attr( $alt );
 
-    $avatar = "<img alt='{$safe_alt}' src='{$sl_avatar}' class='avatar avatar-{$size} photo avatar-semantic-linkbacks' height='{$size}' width='{$size}' />";
+    $avatar = "<img alt='{$safe_alt}' src='{$sl_avatar}' class='avatar avatar-{$size} photo u-photo avatar-semantic-linkbacks' height='{$size}' width='{$size}' />";
     return $avatar;
   }
 
