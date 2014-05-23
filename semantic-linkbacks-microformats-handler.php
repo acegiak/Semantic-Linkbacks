@@ -63,6 +63,12 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      */
     $class_mapper["mention"]     = "mention";
 
+    /*
+     * rsvp
+     * @link http://indiewebcamp.com/rsvp
+     */
+    $class_mapper["rsvp"]        = "rsvp";
+
     return apply_filters("semantic_linkbacks_microformats_class_mapper", $class_mapper);
   }
 
@@ -143,7 +149,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     if ( isset($properties['author']) && isset($properties['author'][0]['properties']) ) {
       $author = $properties['author'][0]['properties'];
     } else {
-      $author = self::get_representative_author($mf_array, $properties, $source);
+      $author = self::get_representative_author($mf_array, $source);
     }
 
     // if author is present use the informations for the comment
@@ -157,23 +163,28 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
       }
 
       if (self::check_mf_attr('url', $author)) {
-        $commentdata['comment_author_url'] = wp_slash($author['url'][0]);
+        $commentdata['_author_url'] = esc_url_raw($author['url'][0]);
       }
 
       if (self::check_mf_attr('photo', $author)) {
-        $commentdata['_photo'] = $author['photo'][0];
+        $commentdata['_avatar'] = esc_url_raw($author['photo'][0]);
       }
     }
 
     // set canonical url (u-url)
     if (self::check_mf_attr('url', $properties)) {
-      $commentdata['_canonical'] = $properties['url'][0];
+      $commentdata['_canonical'] = esc_url_raw($properties['url'][0]);
     } else {
-      $commentdata['_canonical'] = $source;
+      $commentdata['_canonical'] = esc_url_raw($source);
     }
 
-    // get post type
-    $commentdata['_type'] = self::get_entry_type($target, $entry, $mf_array);
+    // check rsvp property
+    if (self::check_mf_attr('rsvp', $properties)) {
+      $commentdata['_type'] = wp_slash("rsvp:".$properties['rsvp'][0]);
+    } else {
+      // get post type
+      $commentdata['_type'] = wp_slash(self::get_entry_type($target, $entry, $mf_array));
+    }
 
     return $commentdata;
   }
@@ -221,7 +232,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
    * @param string $source the source url
    * @return array|null the h-card node or null
    */
-  public static function get_representative_author( $mf_array, $properties, $source ) {
+  public static function get_representative_author( $mf_array, $source ) {
     foreach ($mf_array["items"] as $mf) {
       if ( isset( $mf["type"] ) ) {
         if ( in_array( "h-card", $mf["type"] ) ) {
@@ -256,18 +267,18 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
         // check properties if target urls was mentioned
         foreach ($entry['properties'] as $key => $values) {
           // check "normal" links
-          if (in_array($target, $values)) {
+          if (self::compare_urls($target, $values)) {
             return $entry;
           }
 
           // check included h-* formats and their links
           foreach ($values as $obj) {
             // check if reply is a "cite"
-            if (isset($obj['type']) && in_array('h-cite', $obj['type'])) {
+            if (isset($obj['type']) && array_intersect(array('h-cite', 'h-entry'), $obj['type'])) {
               // check url
               if (isset($obj['properties']) && isset($obj['properties']['url'])) {
                 // check target
-                if (in_array($target, $obj['properties']['url'])) {
+                if (self::compare_urls($target, $obj['properties']['url'])) {
                   return $entry;
                 }
               }
@@ -303,31 +314,23 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
   public static function get_entry_type($target, $entry, $mf_array = array()) {
     $classes = self::get_class_mapper();
 
-    // check in-reply-context
-    if (isset($entry['properties']['in-reply-to']) && is_array($entry['properties']['in-reply-to'])) {
-      // iterate in-reply-tos
-      foreach ($entry['properties']['in-reply-to'] as $obj) {
-
-      }
-    }
-
     // check properties for target-url
     foreach ($entry['properties'] as $key => $values) {
       // check u-* params
       if ( in_array( $key, array_keys($classes) ) ) {
         // check "normal" links
-        if (in_array($target, $values)) {
+        if (self::compare_urls($target, $values)) {
           return $classes[$key];
         }
 
         // iterate in-reply-tos
         foreach ($values as $obj) {
-          // check if reply is a "cite"
-          if (isset($obj['type']) && in_array('h-cite', $obj['type'])) {
+          // check if reply is a "cite" or "entry"
+          if (isset($obj['type']) && array_intersect(array('h-cite', 'h-entry'), $obj['type'])) {
             // check url
             if (isset($obj['properties']) && isset($obj['properties']['url'])) {
               // check target
-              if (in_array($target, $obj['properties']['url'])) {
+              if (self::compare_urls($target, $obj['properties']['url'])) {
                 return $classes[$key];
               }
             }
@@ -372,5 +375,30 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     }
 
     return false;
+  }
+
+  /**
+   * compare an url with a list of urls
+   *
+   * @param string $needle the target url
+   * @param array $haystack a list of urls
+   * @param boolean $schemelesse define if the target url should be checked
+   *        with http:// and https://
+   * @return boolean
+   */
+  public static function compare_urls($needle, $haystack, $schemeless = true) {
+    if ($schemeless === true) {
+      // remove url-scheme
+      $schemeless_target = preg_replace("/^https?:\/\//i", "", $needle);
+
+      // add both urls to the needle
+      $needle = array("http://".$schemeless_target, "https://".$schemeless_target);
+    } else {
+      // make $needle an array
+      $needle = array($needle);
+    }
+
+    // compare both arrays
+    return array_intersect($needle, $haystack);
   }
 }
