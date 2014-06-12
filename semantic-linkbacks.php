@@ -5,7 +5,7 @@
  Description: Semantic Linkbacks for webmentions, trackbacks and pingbacks
  Author: pfefferle & acegiak
  Author URI: http://notizblog.org/
- Version: 2.0.1-dev
+ Version: 3.0.0
 */
 
 if (!class_exists("SemanticLinkbacksPlugin")) :
