@@ -1,10 +1,10 @@
 === Semantic-Linkbacks ===
 Contributors: pfefferle
 Donate link: http://14101978.de
-Tags: webmention, pingback, trackback, linkback
+Tags: webmention, pingback, trackback, linkback, microformats
 Requires at least: 2.7
-Tested up to: 3.8
-Stable tag: 3.0.0
+Tested up to: 3.9.1
+Stable tag: 3.0.1
 
 Semantic Trackbacks/Pingbacks/WebMentions for WordPress!
 
@@ -68,6 +68,10 @@ All filds beginning with `_` like:
 == Changelog ==
 
 Project maintined on github at [pfefferle/wordpress-semantic-linkbacks](https://github.com/pfefferle/wordpress-semantic-linkbacks).
+
+= 3.0.1 =
+
+* fixed bug in comments section
 
 = 3.0.0 =
 
