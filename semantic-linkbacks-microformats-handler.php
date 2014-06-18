@@ -133,6 +133,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     } elseif (self::check_mf_attr('name', $properties)) {
       $commentdata['comment_content'] = wp_slash($properties['name'][0]);
     }
+    $commentdata['comment_content'] = trim($commentdata['comment_content']);
 
     // set the right date
     if (self::check_mf_attr('published', $properties)) {
