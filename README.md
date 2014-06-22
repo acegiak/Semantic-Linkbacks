@@ -65,6 +65,10 @@ All filds beginning with `_` like:
 
 ...will be saved as comment-metas.
 
+### Who made the logos? ###
+
+The WebMention and Pingback logos are made by [Aaron Parecki](http://aaronparecki.com) and the Microformats logo is made by [Dan Cederholm](http://simplebits.com/work/microformats/)
+
 ## Changelog ##
 
 Project maintined on github at [pfefferle/wordpress-semantic-linkbacks](https://github.com/pfefferle/wordpress-semantic-linkbacks).
