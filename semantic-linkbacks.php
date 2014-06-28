@@ -91,8 +91,15 @@ class SemanticLinkbacksPlugin {
       return $comment_ID;
     }
 
-    // get remote html
+    // generate target
     $target = get_permalink( $post['ID'] );
+
+    // add replytocom if present
+    if (isset($commentdata['comment_parent']) && !empty($commentdata['comment_parent'])) {
+      $target = add_query_arg(array("replytocom" => $commentdata['comment_parent']), $target);
+    }
+
+    // get remote html
     $response = wp_remote_get( esc_url_raw(html_entity_decode($source)), array('timeout' => 100) );
 
     // handle errors
