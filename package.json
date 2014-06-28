@@ -1,6 +1,6 @@
 {
 	"name": "wordpress-semantic-linkbacks",
-	"version": "3.0.0",
+	"version": "3.0.2",
 	"description": "Semantic Trackbacks/Pingbacks/WebMentions for WordPress!",
 	"main": "index.js",
 	"dependencies": {
