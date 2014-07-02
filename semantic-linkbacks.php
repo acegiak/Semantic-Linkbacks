@@ -1,11 +1,11 @@
 <?php
 /*
  Plugin Name: Semantic-Linkbacks
- Plugin URI: https://github.com/acegiak/Semantic-Linkbacks
+ Plugin URI: https://github.com/pfefferle/wordpress-semantic-linkbacks
  Description: Semantic Linkbacks for webmentions, trackbacks and pingbacks
  Author: pfefferle & acegiak
  Author URI: http://notizblog.org/
- Version: 2.0.1-dev
+ Version: 3.0.2
 */
 
 if (!class_exists("SemanticLinkbacksPlugin")) :
@@ -91,8 +91,15 @@ class SemanticLinkbacksPlugin {
       return $comment_ID;
     }
 
-    // get remote html
+    // generate target
     $target = get_permalink( $post['ID'] );
+
+    // add replytocom if present
+    if (isset($commentdata['comment_parent']) && !empty($commentdata['comment_parent'])) {
+      $target = add_query_arg(array("replytocom" => $commentdata['comment_parent']), $target);
+    }
+
+    // get remote html
     $response = wp_remote_get( esc_url_raw(html_entity_decode($source)), array('timeout' => 100) );
 
     // handle errors
@@ -322,7 +329,7 @@ class SemanticLinkbacksPlugin {
    * @return string the replaced/parsed author url or the original comment link
    */
   public static function get_comment_author_url($link) {
-    $comment = get_comment();
+    global $comment;
 
     if ( $author_url = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_author_url', true) ) {
       return $author_url;
