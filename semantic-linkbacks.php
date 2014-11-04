@@ -355,3 +355,29 @@ class SemanticLinkbacksPlugin {
 }
 
 endif;
+
+function get_linkbacks_number($type = "mention", $post_id= 0) {
+  $post = get_post($post_id);
+
+  // change this if your theme can't handle the WebMentions comment type
+  $semantic_comment_type = defined('WEBMENTION_COMMENT_TYPE') ? WEBMENTION_COMMENT_TYPE : 'webmention';
+  $comment_type = apply_filters('semantic_comment_type', $semantic_comment_type);
+
+  $args = array(
+    'post_id' => $post->ID,
+    'type'    => $comment_type,
+    'count'   => true,
+    'status'  => 'approve',
+    'meta_query' => array(
+		array(
+			'key'   => 'semantic_linkbacks_type',
+			'value' => $type
+		)
+	)
+  );
+
+  $comments_query = new WP_Comment_Query;
+  $c = $comments_query->query($args);
+  if ($c) { return $c; }
+  else { return 0; }
+}
