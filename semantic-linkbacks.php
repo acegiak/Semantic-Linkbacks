@@ -381,3 +381,20 @@ function get_linkbacks_number($type = "mention", $post_id= 0) {
   if ($c) { return $c; }
   else { return 0; }
 }
+
+function get_linkbacks($type = "mention", $post_id= 0) {
+  $post = get_post($post_id);
+
+  $args = array(
+    'post_id' => $post->ID,
+    'status'  => 'approve',
+    'meta_query' => array(
+                array(  
+                        'key'   => 'semantic_linkbacks_type',
+                        'value' => $type
+                )
+        )
+  );
+
+  return get_comments( $args);
+}
