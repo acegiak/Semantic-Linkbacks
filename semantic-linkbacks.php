@@ -356,16 +356,12 @@ class SemanticLinkbacksPlugin {
 
 endif;
 
+// Get a Count of Linkbacks by Type
 function get_linkbacks_number($type = "mention", $post_id= 0) {
   $post = get_post($post_id);
 
-  // change this if your theme can't handle the WebMentions comment type
-  $semantic_comment_type = defined('WEBMENTION_COMMENT_TYPE') ? WEBMENTION_COMMENT_TYPE : 'webmention';
-  $comment_type = apply_filters('semantic_comment_type', $semantic_comment_type);
-
   $args = array(
     'post_id' => $post->ID,
-    'type'    => $comment_type,
     'count'   => true,
     'status'  => 'approve',
     'meta_query' => array(
@@ -376,12 +372,12 @@ function get_linkbacks_number($type = "mention", $post_id= 0) {
 	)
   );
 
-  $comments_query = new WP_Comment_Query;
-  $c = $comments_query->query($args);
+  $c = get_comments($args);
   if ($c) { return $c; }
   else { return 0; }
 }
 
+// Returns comments of linkback type
 function get_linkbacks($type = "mention", $post_id= 0) {
   $post = get_post($post_id);
 
