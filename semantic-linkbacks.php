@@ -354,70 +354,57 @@ class SemanticLinkbacksPlugin {
   }
 }
 
-endif;
-
-// Get a Count of Linkbacks by Type
-function get_linkbacks_number($type = "all", $post_id= 0) {
+/**
+ * Get a Count of Linkbacks by Type
+ *
+ * @param string $type the comment type
+ * @param int $post_id the id of the post
+ *
+ * @return the number of matching linkbacks
+ */
+function get_linkbacks_number($type = null, $post_id = 0) {
   $post = get_post($post_id);
-  if ($type!='all') {
-    $args = array(
+
+  $args = array(
     'post_id' => $post->ID,
     'count'   => true,
-    'status'  => 'approve',
-    'meta_query' => array(
-		array(
-			'key'   => 'semantic_linkbacks_type',
-			'value' => $type
-		)
-	)
+    'status'  => 'approve'
   );
-    }
-  else {
-     $args = array(
-           'post_id' => $post->ID,
-    	   'count'   => true,
- 	   'status'  => 'approve',
-            'meta_query' => array(
-                array(  
-                        'key'   => 'semantic_linkbacks_type',
-                        'compare' => 'EXISTS'
-                )
-        )
-  );
-     }
-  $c = get_comments($args);
-  if ($c) { return $c; }
+
+  if ($type) { // use type if set
+    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type', 'value' => $type));
+  } else { // check only if type exists
+    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type', 'compare' => 'EXISTS'));
+  }
+
+  $comments = get_comments($args);
+  if ($comments) { return $comments; }
   else { return 0; }
 }
 
-// Returns comments of linkback type
-function get_linkbacks($type = "all", $post_id= 0) {
+/**
+ * Returns comments of linkback type
+ *
+ * @param string $type the comment type
+ * @param int $post_id the id of the post
+ *
+ * @return the matching linkback "comments"
+ */
+ */
+function get_linkbacks($type = null, $post_id = 0) {
   $post = get_post($post_id);
-  if($type!='all') {
   $args = array(
     'post_id' => $post->ID,
-    'status'  => 'approve',
-    'meta_query' => array(
-                array(  
-                        'key'   => 'semantic_linkbacks_type',
-                        'value' => $type
-                )
-        )
+    'status'  => 'approve'
   );
-}  
 
- else {
-  $args = array(
-    'post_id' => $post->ID,
-    'status'  => 'approve',
-    'meta_query' => array(
-                array(
-                        'key'   => 'semantic_linkbacks_type',
-                        'compare' => 'EXISTS'
-                )
-        )
-  ); 
-}
+  if ($type) { // use type if set
+    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type', 'value' => $type));
+  } else { // check only if type exists
+    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type','compare' => 'EXISTS'));
+  }
 
   return get_comments( $args);
 }
+
+endif;
