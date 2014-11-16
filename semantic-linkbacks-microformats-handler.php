@@ -1,6 +1,6 @@
 <?php
 if(!function_exists ("Mf2\parse")){
-	require_once 'Mf2/Parser.php';
+  require_once 'Mf2/Parser.php';
 }
 
 use Mf2\Parser;
