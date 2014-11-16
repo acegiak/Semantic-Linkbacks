@@ -355,3 +355,69 @@ class SemanticLinkbacksPlugin {
 }
 
 endif;
+
+// Get a Count of Linkbacks by Type
+function get_linkbacks_number($type = "all", $post_id= 0) {
+  $post = get_post($post_id);
+  if ($type!='all') {
+    $args = array(
+    'post_id' => $post->ID,
+    'count'   => true,
+    'status'  => 'approve',
+    'meta_query' => array(
+		array(
+			'key'   => 'semantic_linkbacks_type',
+			'value' => $type
+		)
+	)
+  );
+    }
+  else {
+     $args = array(
+           'post_id' => $post->ID,
+    	   'count'   => true,
+ 	   'status'  => 'approve',
+            'meta_query' => array(
+                array(  
+                        'key'   => 'semantic_linkbacks_type',
+                        'compare' => 'EXISTS'
+                )
+        )
+  );
+     }
+  $c = get_comments($args);
+  if ($c) { return $c; }
+  else { return 0; }
+}
+
+// Returns comments of linkback type
+function get_linkbacks($type = "all", $post_id= 0) {
+  $post = get_post($post_id);
+  if($type!='all') {
+  $args = array(
+    'post_id' => $post->ID,
+    'status'  => 'approve',
+    'meta_query' => array(
+                array(  
+                        'key'   => 'semantic_linkbacks_type',
+                        'value' => $type
+                )
+        )
+  );
+}  
+
+ else {
+  $args = array(
+    'post_id' => $post->ID,
+    'status'  => 'approve',
+    'meta_query' => array(
+                array(
+                        'key'   => 'semantic_linkbacks_type',
+                        'compare' => 'EXISTS'
+                )
+        )
+  ); 
+}
+
+  return get_comments( $args);
+}
