@@ -372,9 +372,9 @@ function get_linkbacks_number($type = null, $post_id = 0) {
   );
 
   if ($type) { // use type if set
-    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type', 'value' => $type));
+    $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type', 'value' => $type));
   } else { // check only if type exists
-    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type', 'compare' => 'EXISTS'));
+    $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type', 'compare' => 'EXISTS'));
   }
 
   $comments = get_comments($args);
@@ -390,7 +390,6 @@ function get_linkbacks_number($type = null, $post_id = 0) {
  *
  * @return the matching linkback "comments"
  */
- */
 function get_linkbacks($type = null, $post_id = 0) {
   $post = get_post($post_id);
   $args = array(
@@ -399,9 +398,9 @@ function get_linkbacks($type = null, $post_id = 0) {
   );
 
   if ($type) { // use type if set
-    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type', 'value' => $type));
+    $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type', 'value' => $type));
   } else { // check only if type exists
-    $args['meta_query'] => array(array('key' => 'semantic_linkbacks_type','compare' => 'EXISTS'));
+    $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type','compare' => 'EXISTS'));
   }
 
   return get_comments( $args);
