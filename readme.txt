@@ -26,6 +26,7 @@ The IndieWeb community defines several types of feedback:
 * Reposts: <http://indiewebcamp.com/repost>
 * Likes: <http://indiewebcamp.com/likes>
 * Favorites: <http://indiewebcamp.com/favorite>
+* RSVPs: <http://indiewebcamp.com/rsvp>
 * Classic "Mentions": <http://indiewebcamp.com/mentions>
 
 = How to add RDFa or Schema.org support =
@@ -72,6 +73,11 @@ The WebMention and Pingback logos are made by [Aaron Parecki](http://aaronpareck
 == Changelog ==
 
 Project maintined on github at [pfefferle/wordpress-semantic-linkbacks](https://github.com/pfefferle/wordpress-semantic-linkbacks).
+
+= 3.0.3 =
+
+* some small tweaks
+* added custom comment classes based on the linkback-type (props to David Shanske for the idea)
 
 = 3.0.2 =
 

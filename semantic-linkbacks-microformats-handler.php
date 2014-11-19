@@ -1,11 +1,11 @@
 <?php
-if(!function_exists ("Mf2\parse")){
-	require_once 'Mf2/Parser.php';
+if(!function_exists ("Mf2\parse")) {
+  require_once 'Mf2/Parser.php';
 }
 
 use Mf2\Parser;
 
-add_action('init', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'init' ));
+add_action('init', array('SemanticLinkbacksPlugin_MicroformatsHandler', 'init'));
 
 /**
  * provides a microformats handler for the semantic linkbacks
@@ -19,7 +19,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
    */
   public static function init() {
     //
-    add_filter('semantic_linkbacks_commentdata', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'generate_commentdata' ), 1, 4);
+    add_filter('semantic_linkbacks_commentdata', array('SemanticLinkbacksPlugin_MicroformatsHandler', 'generate_commentdata'), 1, 4);
   }
 
   /**
@@ -106,7 +106,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     $source = $commentdata['comment_author_url'];
 
     // parse source html
-    $parser = new Parser( $html, $source );
+    $parser = new Parser($html, $source);
     $mf_array = $parser->parse(true);
 
     // get all "relevant" entries
@@ -140,16 +140,16 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // set the right date
     if (self::check_mf_attr('published', $properties)) {
       $time = strtotime($properties['published'][0]);
-      $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
+      $commentdata['comment_date'] = get_date_from_gmt(date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s');
     } elseif (self::check_mf_attr('updated', $properties)) {
       $time = strtotime($properties['updated'][0]);
-      $commentdata['comment_date'] = get_date_from_gmt( date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s' );
+      $commentdata['comment_date'] = get_date_from_gmt(date("Y-m-d H:i:s", $time), 'Y-m-d H:i:s');
     }
 
     $author = null;
 
     // check if h-card has an author
-    if ( isset($properties['author']) && isset($properties['author'][0]['properties']) ) {
+    if (isset($properties['author']) && isset($properties['author'][0]['properties'])) {
       $author = $properties['author'][0]['properties'];
     } else {
       $author = self::get_representative_author($mf_array, $source);
@@ -202,24 +202,24 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     $entries = array();
 
     // some basic checks
-    if ( !is_array( $mf_array ) )
+    if (!is_array($mf_array))
       return $entries;
-    if ( !isset( $mf_array["items"] ) )
+    if (!isset($mf_array["items"]))
       return $entries;
-    if ( count( $mf_array["items"] ) == 0 )
+    if (count($mf_array["items"]) == 0)
       return $entries;
 
     // get first item
     $first_item = $mf_array["items"][0];
 
     // check if it is an h-feed
-    if ( isset($first_item['type']) && in_array( "h-feed", $first_item["type"]) && isset($first_item['children']) ) {
+    if (isset($first_item['type']) && in_array("h-feed", $first_item["type"]) && isset($first_item['children'])) {
       $mf_array["items"] = $first_item['children'];
     }
 
     // iterate array
     foreach ($mf_array["items"] as $mf) {
-      if ( isset( $mf["type"] ) && in_array( "h-entry", $mf["type"] ) ) {
+      if (isset($mf["type"]) && in_array("h-entry", $mf["type"])) {
         $entries[] = $mf;
       }
     }
@@ -235,10 +235,10 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
    * @param string $source the source url
    * @return array|null the h-card node or null
    */
-  public static function get_representative_author( $mf_array, $source ) {
+  public static function get_representative_author($mf_array, $source) {
     foreach ($mf_array["items"] as $mf) {
-      if ( isset( $mf["type"] ) ) {
-        if ( in_array( "h-card", $mf["type"] ) ) {
+      if (isset($mf["type"])) {
+        if (in_array("h-card", $mf["type"])) {
           // check domain
           if (isset($mf['properties']) && isset($mf['properties']['url'])) {
             foreach ($mf['properties']['url'] as $url) {
@@ -262,11 +262,11 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
    * @param string $target the target url
    * @return array the h-entry node or false
    */
-  public static function get_representative_entry( $entries, $target ) {
+  public static function get_representative_entry($entries, $target) {
     // iterate array
     foreach ($entries as $entry) {
       // check properties
-      if ( isset( $entry['properties'] ) ) {
+      if (isset($entry['properties'])) {
         // check properties if target urls was mentioned
         foreach ($entry['properties'] as $key => $values) {
           // check "normal" links
@@ -292,10 +292,10 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
         // check properties if target urls was mentioned
         foreach ($entry['properties'] as $key => $values) {
           // check content for the link
-          if ( $key == "content" && preg_match_all("/<a[^>]+?".preg_quote($target, "/")."[^>]*>([^>]+?)<\/a>/i", $values[0]['html'], $context) ) {
+          if ($key == "content" && preg_match_all("/<a[^>]+?".preg_quote($target, "/")."[^>]*>([^>]+?)<\/a>/i", $values[0]['html'], $context)) {
             return $entry;
           // check summary for the link
-          } elseif ($key == "summary" && preg_match_all("/<a[^>]+?".preg_quote($target, "/")."[^>]*>([^>]+?)<\/a>/i", $values[0], $context) ) {
+          } elseif ($key == "summary" && preg_match_all("/<a[^>]+?".preg_quote($target, "/")."[^>]*>([^>]+?)<\/a>/i", $values[0], $context)) {
             return $entry;
           }
         }
@@ -320,7 +320,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // check properties for target-url
     foreach ($entry['properties'] as $key => $values) {
       // check u-* params
-      if ( in_array( $key, array_keys($classes) ) ) {
+      if (in_array($key, array_keys($classes))) {
         // check "normal" links
         if (self::compare_urls($target, $values)) {
           return $classes[$key];
@@ -352,7 +352,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     // check rels for target-url
     foreach ($mf_array['rels'] as $key => $values) {
       // check rel params
-      if ( in_array( $key, array_keys($rels) ) ) {
+      if (in_array($key, array_keys($rels))) {
         foreach ($values as $value) {
           if ($value == $target) {
             return $rels[$key];
