@@ -13,16 +13,16 @@ if (!class_exists("SemanticLinkbacksPlugin")) :
 // check if php version is >= 5.3
 // version is required by the mf2 parser
 function semantic_linkbacks_activation() {
-  if ( version_compare( phpversion(), 5.3, '<' ) ) {
-    die( "The minimum PHP version required for this plugin is 5.3" );
+  if (version_compare(phpversion(), 5.3, '<')) {
+    die("The minimum PHP version required for this plugin is 5.3");
   }
 }
-register_activation_hook( __FILE__, 'semantic_linkbacks_activation' );
+register_activation_hook(__FILE__, 'semantic_linkbacks_activation');
 
 // run plugin only if php version is >= 5.3
-if ( version_compare( phpversion(), 5.3, '>=' ) ) {
+if (version_compare(phpversion(), 5.3, '>=')) {
   require_once "semantic-linkbacks-microformats-handler.php";
-  add_action('init', array( 'SemanticLinkbacksPlugin', 'init' ));
+  add_action('init', array('SemanticLinkbacksPlugin', 'init'));
 }
 
 /**
@@ -36,16 +36,17 @@ class SemanticLinkbacksPlugin {
    */
   public static function init() {
     // hook into linkback functions to add more semantics
-    add_action('pingback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
-    add_action('trackback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
-    add_action('webmention_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ));
+    add_action('pingback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
+    add_action('trackback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
+    add_action('webmention_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
 
-    add_filter('get_avatar', array( 'SemanticLinkbacksPlugin', 'get_avatar'), 11, 5);
-    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
-    add_filter('comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_excerpt'), 12, 3);
-    add_filter('get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3);
-    add_filter('get_comment_author_url', array( 'SemanticLinkbacksPlugin', 'get_comment_author_url' ), 99, 3);
-    add_filter('get_avatar_comment_types', array( 'SemanticLinkbacksPlugin', 'get_avatar_comment_types' ));
+    add_filter('get_avatar', array('SemanticLinkbacksPlugin', 'get_avatar'), 11, 5);
+    add_filter('comment_text', array('SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
+    add_filter('comment_text', array('SemanticLinkbacksPlugin', 'comment_text_excerpt'), 12, 3);
+    add_filter('get_comment_link', array('SemanticLinkbacksPlugin', 'get_comment_link'), 99, 3);
+    add_filter('get_comment_author_url', array('SemanticLinkbacksPlugin', 'get_comment_author_url'), 99, 3);
+    add_filter('get_avatar_comment_types', array('SemanticLinkbacksPlugin', 'get_avatar_comment_types'));
+    add_filter('comment_class', array('SemanticLinkbacksPlugin', 'comment_class'), 10, 4);
   }
 
   /**
@@ -71,7 +72,7 @@ class SemanticLinkbacksPlugin {
     $source = esc_url_raw($commentdata['comment_author_url']);
 
     // check if there is already a matching comment
-    if ( $comments = get_comments( array('meta_key' => 'semantic_linkbacks_source', 'meta_value' => htmlentities($source)) ) ) {
+    if ($comments = get_comments(array('meta_key' => 'semantic_linkbacks_source', 'meta_value' => htmlentities($source)))) {
       $comment = $comments[0];
 
       if ($comment_ID != $comment->comment_ID) {
@@ -92,7 +93,7 @@ class SemanticLinkbacksPlugin {
     }
 
     // generate target
-    $target = get_permalink( $post['ID'] );
+    $target = get_permalink($post['ID']);
 
     // add replytocom if present
     if (isset($commentdata['comment_parent']) && !empty($commentdata['comment_parent'])) {
@@ -100,18 +101,18 @@ class SemanticLinkbacksPlugin {
     }
 
     // get remote html
-    $response = wp_remote_get( esc_url_raw(html_entity_decode($source)), array('timeout' => 100) );
+    $response = wp_remote_get(esc_url_raw(html_entity_decode($source)), array('timeout' => 100));
 
     // handle errors
-    if ( is_wp_error( $response ) ) {
+    if (is_wp_error($response)) {
       return $comment_ID;
     }
 
     // get HTML code of source url
-    $html = wp_remote_retrieve_body( $response );
+    $html = wp_remote_retrieve_body($response);
 
     // add source url as comment-meta
-    update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks_source", esc_url_raw($commentdata["comment_author_url"]), true );
+    update_comment_meta($commentdata["comment_ID"], "semantic_linkbacks_source", esc_url_raw($commentdata["comment_author_url"]), true);
 
     // adds a hook to enable some other semantic handlers for example schema.org
     $commentdata = apply_filters("semantic_linkbacks_commentdata", $commentdata, $target, $html);
@@ -125,13 +126,13 @@ class SemanticLinkbacksPlugin {
     if (isset($commentdata['_type']) && in_array($commentdata['_type'], apply_filters("semantic_linkbacks_comment_types", array("reply")))) {
       global $wpdb;
 
-      $wpdb->update( $wpdb->comments, array( 'comment_type' => '' ), array( 'comment_ID' => $commentdata["comment_ID"] ) );
+      $wpdb->update($wpdb->comments, array('comment_type' => ''), array('comment_ID' => $commentdata["comment_ID"]));
     }
 
     // save custom comment properties as comment-metas
     foreach ($commentdata as $key => $value) {
       if (strpos($key, "_") === 0) {
-        update_comment_meta( $commentdata["comment_ID"], "semantic_linkbacks$key", $value, true );
+        update_comment_meta($commentdata["comment_ID"], "semantic_linkbacks$key", $value, true);
         unset($commentdata[$key]);
       }
     }
@@ -155,17 +156,17 @@ class SemanticLinkbacksPlugin {
    */
   public static function get_comment_type_excerpts() {
     $strings = array(
-      'mention'       => _x( '%1$s mentioned this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks' ), // Special case. any value that evals to false will be considered standard
+      'mention'       => _x('%1$s mentioned this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
 
-      'reply'         => _x( '%1$s replied to this %2$s on <a href="%3$s">%4$s</a>',  'semantic_linkbacks' ),
-      'repost'        => _x( '%1$s reposted this %2$s on <a href="%3$s">%4$s</a>',    'semantic_linkbacks' ),
-      'like'          => _x( '%1$s liked this %2$s on <a href="%3$s">%4$s</a>',       'semantic_linkbacks' ),
-      'favorite'      => _x( '%1$s favorited this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks' ),
-      'rsvp:yes'      => _x( '%1$s is <strong>attending</strong>',                    'semantic_linkbacks' ),
-      'rsvp:no'       => _x( '%1$s is <strong>not attending</strong>',                'semantic_linkbacks' ),
-      'rsvp:maybe'    => _x( 'Maybe %1$s will be <strong>attending</strong>',         'semantic_linkbacks' ),
-      'rsvp:invited'  => _x( '%1$s is <strong>invited</strong>',                      'semantic_linkbacks' ),
-      'rsvp:tracking' => _x( '%1$s <strong>tracks</strong> this event',               'semantic_linkbacks' )
+      'reply'         => _x('%1$s replied to this %2$s on <a href="%3$s">%4$s</a>',  'semantic_linkbacks'),
+      'repost'        => _x('%1$s reposted this %2$s on <a href="%3$s">%4$s</a>',    'semantic_linkbacks'),
+      'like'          => _x('%1$s liked this %2$s on <a href="%3$s">%4$s</a>',       'semantic_linkbacks'),
+      'favorite'      => _x('%1$s favorited this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'),
+      'rsvp:yes'      => _x('%1$s is <strong>attending</strong>',                    'semantic_linkbacks'),
+      'rsvp:no'       => _x('%1$s is <strong>not attending</strong>',                'semantic_linkbacks'),
+      'rsvp:maybe'    => _x('Maybe %1$s will be <strong>attending</strong>',         'semantic_linkbacks'),
+      'rsvp:invited'  => _x('%1$s is <strong>invited</strong>',                      'semantic_linkbacks'),
+      'rsvp:tracking' => _x('%1$s <strong>tracks</strong> this event',               'semantic_linkbacks')
     );
     return $strings;
   }
@@ -177,17 +178,17 @@ class SemanticLinkbacksPlugin {
   */
   public static function get_comment_type_strings() {
     $strings = array(
-      'mention'       => _x( 'Mention',   'semantic_linkbacks' ), // Special case. any value that evals to false will be considered standard
+      'mention'       => _x('Mention',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
 
-      'reply'         => _x( 'Reply',     'semantic_linkbacks' ),
-      'repost'        => _x( 'Repost',    'semantic_linkbacks' ),
-      'like'          => _x( 'Like',      'semantic_linkbacks' ),
-      'favorite'      => _x( 'Favorite',  'semantic_linkbacks' ),
-      'rsvp:yes'      => _x( 'RSVP',      'semantic_linkbacks' ),
-      'rsvp:no'       => _x( 'RSVP',      'semantic_linkbacks' ),
-      'rsvp:invited'  => _x( 'RSVP',      'semantic_linkbacks' ),
-      'rsvp:maybe'    => _x( 'RSVP',      'semantic_linkbacks' ),
-      'rsvp:tracking' => _x( 'RSVP',      'semantic_linkbacks' )
+      'reply'         => _x('Reply',     'semantic_linkbacks'),
+      'repost'        => _x('Repost',    'semantic_linkbacks'),
+      'like'          => _x('Like',      'semantic_linkbacks'),
+      'favorite'      => _x('Favorite',  'semantic_linkbacks'),
+      'rsvp:yes'      => _x('RSVP',      'semantic_linkbacks'),
+      'rsvp:no'       => _x('RSVP',      'semantic_linkbacks'),
+      'rsvp:invited'  => _x('RSVP',      'semantic_linkbacks'),
+      'rsvp:maybe'    => _x('RSVP',      'semantic_linkbacks'),
+      'rsvp:tracking' => _x('RSVP',      'semantic_linkbacks')
     );
     return $strings;
   }
@@ -297,10 +298,10 @@ class SemanticLinkbacksPlugin {
       return $avatar;
     }
 
-    if ( false === $alt )
+    if (false === $alt)
       $safe_alt = '';
     else
-      $safe_alt = esc_attr( $alt );
+      $safe_alt = esc_attr($alt);
 
     $avatar = "<img alt='{$safe_alt}' src='{$sl_avatar}' class='avatar avatar-{$size} photo u-photo avatar-semantic-linkbacks' height='{$size}' width='{$size}' />";
     return $avatar;
@@ -315,7 +316,7 @@ class SemanticLinkbacksPlugin {
    * @return string the linkback source or the original comment link
    */
   public static function get_comment_link($link, $comment, $args) {
-    if (is_singular() && $canonical = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_canonical', true) ) {
+    if (is_singular() && $canonical = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_canonical', true)) {
       return $canonical;
     }
 
@@ -331,11 +332,49 @@ class SemanticLinkbacksPlugin {
   public static function get_comment_author_url($link) {
     global $comment;
 
-    if ( $author_url = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_author_url', true) ) {
+    if ($author_url = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_author_url', true)) {
       return $author_url;
     }
 
     return $link;
+  }
+
+  /**
+   *
+   *
+   *
+   *
+   * @return array the extended comment classes as array
+   */
+  public static function comment_class($classes, $class, $comment_id, $post_id) {
+    // get comment
+    $comment = get_comment($comment_id);
+
+    // "commment type to class" mapper
+    $class_mapping = array(
+      'mention'       => 'h-as-mention',
+
+      'reply'         => 'h-as-reply',
+      'repost'        => 'h-as-repost',
+      'like'          => 'h-as-like',
+      'favorite'      => 'h-as-favorite',
+      'rsvp:yes'      => 'h-as-rsvp',
+      'rsvp:no'       => 'h-as-rsvp',
+      'rsvp:maybe'    => 'h-as-rsvp',
+      'rsvp:invited'  => 'h-as-rsvp',
+      'rsvp:tracking' => 'h-as-rsvp'
+    );
+
+    $comment_type = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_type', true);
+
+    // check the comment type
+    if ($comment_type && isset($class_mapping[$comment_type])) {
+      $classes[] = $class_mapping[$comment_type];
+
+      $classes = array_unique($classes);
+    }
+
+    return $classes;
   }
 
   /**
@@ -403,7 +442,7 @@ function get_linkbacks($type = null, $post_id = 0) {
     $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type','compare' => 'EXISTS'));
   }
 
-  return get_comments( $args);
+  return get_comments($args);
 }
 
 endif;
