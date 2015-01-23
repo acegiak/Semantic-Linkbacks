@@ -75,7 +75,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      * tag
      * @link http://indiewebcamp.com/tag
      */
-    $class_mapper["tag-of"]        = "tag";
+    $class_mapper["tag-of"]      = "tag";
 
 
     return apply_filters("semantic_linkbacks_microformats_class_mapper", $class_mapper);

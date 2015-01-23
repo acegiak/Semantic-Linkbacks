@@ -27,6 +27,7 @@ The IndieWeb community defines several types of feedback:
 * Likes: <http://indiewebcamp.com/likes>
 * Favorites: <http://indiewebcamp.com/favorite>
 * RSVPs: <http://indiewebcamp.com/rsvp>
+* Tagging: <http://indiewebcamp.com/tag>
 * Classic "Mentions": <http://indiewebcamp.com/mentions>
 
 ### How to add RDFa or Schema.org support ###
