@@ -39,7 +39,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     $class_mapper["reply-of"]    = "reply";
 
     /*
-     * likes
+     * repost
      * @link http://indiewebcamp.com/repost
      */
     $class_mapper["repost"]      = "repost";
@@ -70,6 +70,13 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      * @link http://indiewebcamp.com/rsvp
      */
     $class_mapper["rsvp"]        = "rsvp";
+
+    /*
+     * tag
+     * @link http://indiewebcamp.com/tag
+     */
+    $class_mapper["tag-of"]        = "tag";
+
 
     return apply_filters("semantic_linkbacks_microformats_class_mapper", $class_mapper);
   }
