@@ -10,7 +10,7 @@ Richer Comments and Linkbacks for WordPress!
 
 == Description ==
 
-Generates richer WordPress comments from linkbacks such as [WebMention](https://wordpress.org/plugins/webmention) or classic linkback protocols like Trackback or Pingback. 
+Generates richer WordPress comments from linkbacks such as [WebMention](https://wordpress.org/plugins/webmention) or classic linkback protocols like Trackback or Pingback.
 
 The limited display for trackbacks and linkbacks is replaced by a clean full sentence, such as "Bob mentioned this article on bob.com." If Bob's site uses markup that the plugin can interpret, it may add his profile picture or other parts of his page to display as a full comment.
 
@@ -25,7 +25,7 @@ to enhance linkbacks. The plugin is most useful with webmention support(separate
 
 = Why WebMentions? =
 
-[WebMention](http://indiewebcamp.com/webmention) is a modern reimplementation of Pingback using only HTTP and x-www-urlencoded content rather than XMLRPC requests. WebMention supersedes Pingback and is simpler to implement. 
+[WebMention](http://indiewebcamp.com/webmention) is a modern reimplementation of Pingback using only HTTP and x-www-urlencoded content rather than XMLRPC requests. WebMention supersedes Pingback and is simpler to implement.
 
 = What about the semantic "comment" types? =
 
@@ -85,6 +85,7 @@ Project actively developed on Github at [pfefferle/wordpress-semantic-linkbacks]
 * Pelle Wessman ([@voxpelli](https://github.com/voxpelli)) for his awesome [WebMention test-pinger](https://github.com/voxpelli/node-webmention-testpinger)
 * Ryan Barrett ([@snarfed](https://github.com/snarfed)) for his feedback
 * Barnaby Walters ([@barnabywalters](https://github.com/barnabywalters)) for his awesome [mf2 parser](https://github.com/indieweb/php-mf2)
+* David Shanske ([@dshanske](https://github.com/dshanske)) for his feedback and a lot of pull requests
 * ([@acegiak](https://github.com/acegiak)) for the initial plugin
 
 == Installation ==
