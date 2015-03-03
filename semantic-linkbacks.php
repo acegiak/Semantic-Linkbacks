@@ -5,7 +5,7 @@
  Description: Semantic Linkbacks for webmentions, trackbacks and pingbacks
  Author: pfefferle & acegiak
  Author URI: http://notizblog.org/
- Version: 3.0.2
+ Version: 3.0.4
 */
 
 if (!class_exists("SemanticLinkbacksPlugin")) :
@@ -41,8 +41,13 @@ class SemanticLinkbacksPlugin {
     add_action('webmention_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
 
     add_filter('get_avatar', array('SemanticLinkbacksPlugin', 'get_avatar'), 11, 5);
+
+    // To extend or to override the default behavior, just use the `comment_text` filter with a lower
+    // priority (so that it's called after this one) or remove the filters completely in
+    // your code: `remove_filter('comment_text', array('SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11);`
     add_filter('comment_text', array('SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11, 3);
     add_filter('comment_text', array('SemanticLinkbacksPlugin', 'comment_text_excerpt'), 12, 3);
+
     add_filter('get_comment_link', array('SemanticLinkbacksPlugin', 'get_comment_link'), 99, 3);
     add_filter('get_comment_author_url', array('SemanticLinkbacksPlugin', 'get_comment_author_url'), 99, 3);
     add_filter('get_avatar_comment_types', array('SemanticLinkbacksPlugin', 'get_avatar_comment_types'));
@@ -124,9 +129,7 @@ class SemanticLinkbacksPlugin {
 
     // remove "webmention" comment-type if $type is "reply"
     if (isset($commentdata['_type']) && in_array($commentdata['_type'], apply_filters("semantic_linkbacks_comment_types", array("reply")))) {
-      global $wpdb;
-
-      $wpdb->update($wpdb->comments, array('comment_type' => ''), array('comment_ID' => $commentdata["comment_ID"]));
+      $commentdata["comment_type"] = "";
     }
 
     // save custom comment properties as comment-metas
@@ -162,13 +165,14 @@ class SemanticLinkbacksPlugin {
       'repost'        => _x('%1$s reposted this %2$s on <a href="%3$s">%4$s</a>',    'semantic_linkbacks'),
       'like'          => _x('%1$s liked this %2$s on <a href="%3$s">%4$s</a>',       'semantic_linkbacks'),
       'favorite'      => _x('%1$s favorited this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'),
-      'tagged'        => _x('%1$s tagged this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'),
+      'tagged'        => _x('%1$s tagged this %2$s on <a href="%3$s">%4$s</a>',      'semantic_linkbacks'),
       'rsvp:yes'      => _x('%1$s is <strong>attending</strong>',                    'semantic_linkbacks'),
       'rsvp:no'       => _x('%1$s is <strong>not attending</strong>',                'semantic_linkbacks'),
       'rsvp:maybe'    => _x('Maybe %1$s will be <strong>attending</strong>',         'semantic_linkbacks'),
       'rsvp:invited'  => _x('%1$s is <strong>invited</strong>',                      'semantic_linkbacks'),
       'rsvp:tracking' => _x('%1$s <strong>tracks</strong> this event',               'semantic_linkbacks')
     );
+
     return $strings;
   }
 
@@ -192,6 +196,7 @@ class SemanticLinkbacksPlugin {
       'rsvp:maybe'    => _x('RSVP',      'semantic_linkbacks'),
       'rsvp:tracking' => _x('RSVP',      'semantic_linkbacks')
     );
+
     return $strings;
   }
 
@@ -204,7 +209,7 @@ class SemanticLinkbacksPlugin {
    * @return string the filtered comment text
    */
   public static function comment_text_add_cite($text, $comment = null, $args = array()) {
-    // only change text for pinbacks/trackbacks/webmentions
+    // only change text for "real" comments (replys)
     if (!$comment) {
       return $text;
     }
@@ -222,7 +227,7 @@ class SemanticLinkbacksPlugin {
                       '</a></cite></small></p>';
     }
 
-    return apply_filters("semantic_linkbacks_cite", $text);
+    return $text;
   }
 
   /**
@@ -273,9 +278,7 @@ class SemanticLinkbacksPlugin {
     $host = preg_replace("/^www\./", "", $host);
 
     // generate output
-    $text = sprintf($comment_type_excerpts[$comment_type], get_comment_author_link($comment->comment_ID), $post_format, $url, $host);
-
-    return apply_filters("semantic_linkbacks_excerpt", $text);
+    return sprintf($comment_type_excerpts[$comment_type], get_comment_author_link($comment->comment_ID), $post_format, $url, $host);
   }
 
   /**
@@ -442,7 +445,7 @@ function get_linkbacks($type = null, $post_id = 0) {
   if ($type) { // use type if set
     $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type', 'value' => $type));
   } else { // check only if type exists
-    $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type','compare' => 'EXISTS'));
+    $args['meta_query'] = array(array('key' => 'semantic_linkbacks_type', 'compare' => 'EXISTS'));
   }
 
   return get_comments($args);
