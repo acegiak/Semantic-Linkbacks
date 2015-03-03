@@ -1,5 +1,5 @@
 <?php
-if(!function_exists ("Mf2\parse")) {
+if(!class_exists("Mf2\Parser")) {
   require_once 'Mf2/Parser.php';
 }
 
