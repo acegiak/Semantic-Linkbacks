@@ -227,7 +227,7 @@ class SemanticLinkbacksPlugin {
                       '</a></cite></small></p>';
     }
 
-    return $text;
+    return apply_filters("semantic_linkbacks_cite", $text);
   }
 
   /**
@@ -278,7 +278,9 @@ class SemanticLinkbacksPlugin {
     $host = preg_replace("/^www\./", "", $host);
 
     // generate output
-    return sprintf($comment_type_excerpts[$comment_type], get_comment_author_link($comment->comment_ID), $post_format, $url, $host);
+    $text = sprintf($comment_type_excerpts[$comment_type], get_comment_author_link($comment->comment_ID), $post_format, $url, $host);
+
+    return apply_filters("semantic_linkbacks_excerpt", $text);
   }
 
   /**
