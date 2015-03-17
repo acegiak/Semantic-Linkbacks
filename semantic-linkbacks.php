@@ -2,10 +2,12 @@
 /*
  Plugin Name: Semantic-Linkbacks
  Plugin URI: https://github.com/pfefferle/wordpress-semantic-linkbacks
- Description: Semantic Linkbacks for webmentions, trackbacks and pingbacks
+ Description: Semantic Linkbacks for WebMentions, Trackbacks and Pingbacks
  Author: pfefferle & acegiak
  Author URI: http://notizblog.org/
  Version: 3.0.5
+ Text Domain: semantic_linkbacks
+ Domain Path: /languages
 */
 
 if (!class_exists("SemanticLinkbacksPlugin")) :
@@ -32,9 +34,16 @@ if (version_compare(phpversion(), 5.3, '>=')) {
  */
 class SemanticLinkbacksPlugin {
   /**
-   * Initialize the plugin, registering WordPess hooks.
+   * initialize the plugin, registering WordPess hooks.
    */
   public static function init() {
+    // for plugins
+    load_plugin_textdomain(
+      "semantic_linkbacks", // unique slug
+      false, // deprecated
+      dirname(plugin_basename(__FILE__)) . "/languages/"
+    );
+
     // hook into linkback functions to add more semantics
     add_action('pingback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
     add_action('trackback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
@@ -128,7 +137,10 @@ class SemanticLinkbacksPlugin {
     }
 
     // remove "webmention" comment-type if $type is "reply"
-    if (isset($commentdata['_type']) && in_array($commentdata['_type'], apply_filters("semantic_linkbacks_comment_types", array("reply")))) {
+    if (isset($commentdata["_type"]) && in_array($commentdata["_type"], apply_filters("semantic_linkbacks_comment_types", array("reply")))) {
+      global $wpdb;
+      $wpdb->update($wpdb->comments, array('comment_type' => ''), array('comment_ID' => $commentdata["comment_ID"]));
+
       $commentdata["comment_type"] = "";
     }
 
@@ -141,13 +153,13 @@ class SemanticLinkbacksPlugin {
     }
 
     // disable flood control
-    remove_filter('check_comment_flood', 'check_comment_flood_db', 10, 3);
+    remove_filter("check_comment_flood", "check_comment_flood_db", 10, 3);
 
     // update comment
     wp_update_comment($commentdata);
 
     // re-add flood control
-    add_filter('check_comment_flood', 'check_comment_flood_db', 10, 3);
+    add_filter("check_comment_flood", "check_comment_flood_db", 10, 3);
 
     return $comment_ID;
   }
@@ -159,18 +171,18 @@ class SemanticLinkbacksPlugin {
    */
   public static function get_comment_type_excerpts() {
     $strings = array(
-      'mention'       => _x('%1$s mentioned this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
+      'mention'       => _x('%1$s mentioned %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
 
-      'reply'         => _x('%1$s replied to this %2$s on <a href="%3$s">%4$s</a>',  'semantic_linkbacks'),
-      'repost'        => _x('%1$s reposted this %2$s on <a href="%3$s">%4$s</a>',    'semantic_linkbacks'),
-      'like'          => _x('%1$s liked this %2$s on <a href="%3$s">%4$s</a>',       'semantic_linkbacks'),
-      'favorite'      => _x('%1$s favorited this %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'),
-      'tagged'        => _x('%1$s tagged this %2$s on <a href="%3$s">%4$s</a>',      'semantic_linkbacks'),
-      'rsvp:yes'      => _x('%1$s is <strong>attending</strong>',                    'semantic_linkbacks'),
-      'rsvp:no'       => _x('%1$s is <strong>not attending</strong>',                'semantic_linkbacks'),
-      'rsvp:maybe'    => _x('Maybe %1$s will be <strong>attending</strong>',         'semantic_linkbacks'),
-      'rsvp:invited'  => _x('%1$s is <strong>invited</strong>',                      'semantic_linkbacks'),
-      'rsvp:tracking' => _x('%1$s <strong>tracks</strong> this event',               'semantic_linkbacks')
+      'reply'         => _x('%1$s replied to %2$s on <a href="%3$s">%4$s</a>',  'semantic_linkbacks'),
+      'repost'        => _x('%1$s reposted %2$s on <a href="%3$s">%4$s</a>',    'semantic_linkbacks'),
+      'like'          => _x('%1$s liked %2$s on <a href="%3$s">%4$s</a>',       'semantic_linkbacks'),
+      'favorite'      => _x('%1$s favorited %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'),
+      'tagged'        => _x('%1$s tagged %2$s on <a href="%3$s">%4$s</a>',      'semantic_linkbacks'),
+      'rsvp:yes'      => _x('%1$s is <strong>attending</strong>',               'semantic_linkbacks'),
+      'rsvp:no'       => _x('%1$s is <strong>not attending</strong>',           'semantic_linkbacks'),
+      'rsvp:maybe'    => _x('Maybe %1$s will be <strong>attending</strong>',    'semantic_linkbacks'),
+      'rsvp:invited'  => _x('%1$s is <strong>invited</strong>',                 'semantic_linkbacks'),
+      'rsvp:tracking' => _x('%1$s <strong>tracks</strong> this event',          'semantic_linkbacks')
     );
 
     return $strings;
@@ -201,7 +213,32 @@ class SemanticLinkbacksPlugin {
   }
 
   /**
+  * returns an array of post formats (with articlex)
+  *
+  * @return array The array of translated comment type names.
+  */
+  public static function get_post_format_strings() {
+    $strings = array(
+      'standard' => _x('this Article',  'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
+
+      'aside'    => _x('this Aside',    'semantic_linkbacks'),
+      'chat'     => _x('this Chat',     'semantic_linkbacks'),
+      'gallery'  => _x('this Gallery',  'semantic_linkbacks'),
+      'link'     => _x('this Link',     'semantic_linkbacks'),
+      'image'    => _x('this Image',    'semantic_linkbacks'),
+      'quote'    => _x('this Quote',    'semantic_linkbacks'),
+      'status'   => _x('this Status',   'semantic_linkbacks'),
+      'video'    => _x('this Video',    'semantic_linkbacks'),
+      'audio'    => _x('this Audio',    'semantic_linkbacks'),
+    );
+
+    return $strings;
+  }
+
+  /**
    * add cite to "reply"s
+   *
+   * thanks to @snarfed for the idea
    *
    * @param string $text the comment text
    * @param WP_Comment $comment the comment object
@@ -209,23 +246,31 @@ class SemanticLinkbacksPlugin {
    * @return string the filtered comment text
    */
   public static function comment_text_add_cite($text, $comment = null, $args = array()) {
+    $semantic_linkbacks_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true);
+
     // only change text for "real" comments (replys)
-    if (!$comment) {
+    if (!$comment ||
+        !$semantic_linkbacks_type ||
+        $comment->comment_type != "" ||
+        $semantic_linkbacks_type != "reply") {
       return $text;
     }
 
-    // thanks to @snarfed for the idea
-    if ($comment->comment_type == "" && $canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true)) {
-      $host = parse_url($canonical, PHP_URL_HOST);
-
-      // strip leading www, if any
-      $host = preg_replace("/^www\./", "", $host);
-      // note that WordPress's sanitization strips the class="u-url". sigh. :/ also,
-      // <cite> is one of the few elements that make it through the sanitization and
-      // is still uncommon enough that we can use it for styling.
-      $text .= '<p><small>&mdash;&nbsp;<cite><a class="u-url" href="' . $canonical . '">via ' . $host .
-                      '</a></cite></small></p>';
+    // get URL canonical url...
+    $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
+    // ...or fall back to source
+    if (!$semantic_linkbacks_canonical) {
+      $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
     }
+
+    $host = parse_url($semantic_linkbacks_canonical, PHP_URL_HOST);
+
+    // strip leading www, if any
+    $host = preg_replace("/^www\./", "", $host);
+    // note that WordPress's sanitization strips the class="u-url". sigh. :/ also,
+    // <cite> is one of the few elements that make it through the sanitization and
+    // is still uncommon enough that we can use it for styling.
+    $text .= '<p><small>&mdash;&nbsp;<cite><a class="u-url" href="' . $semantic_linkbacks_canonical . '">via ' . $host . '</a></cite></small></p>';
 
     return apply_filters("semantic_linkbacks_cite", $text);
   }
@@ -239,52 +284,52 @@ class SemanticLinkbacksPlugin {
    * @return string the filtered comment text
    */
   public static function comment_text_excerpt($text, $comment = null, $args = array()) {
+    $semantic_linkbacks_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true);
+
     // only change text for pinbacks/trackbacks/webmentions
-    if (!$comment || $comment->comment_type == "" || !get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true)) {
+    if (!$comment ||
+        $comment->comment_type == "" ||
+        $semantic_linkbacks_type == "reply") {
       return $text;
     }
 
-    // check comment type
-    $comment_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true);
-
-    if (!$comment_type || !in_array($comment_type, array_keys(self::get_comment_type_strings()))) {
-      $comment_type = "mention";
+    // check semantic linkback type
+    if (!in_array($semantic_linkbacks_type, array_keys(self::get_comment_type_strings()))) {
+      $semantic_linkbacks_type = "mention";
     }
 
     $post_format = get_post_format($comment->comment_post_ID);
 
     // replace "standard" with "Article"
-    if (!$post_format || $post_format == "standard") {
-      $post_format = "Article";
-    } else {
-      $post_formatstrings = get_post_format_strings();
-      // get the "nice" name
-      $post_format = $post_formatstrings[$post_format];
+    if (!$post_format || !in_array($post_format, array_keys(self::get_post_format_strings()))) {
+      $post_format = "standard";
     }
 
-    // generate the verb, for example "mentioned" or "liked"
+    $post_formatstrings = self::get_post_format_strings();
+
+    // get all the excerpts
     $comment_type_excerpts = self::get_comment_type_excerpts();
 
     // get URL canonical url...
-    $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
+    $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
     // ...or fall back to source
-    if (!$url) {
-      $url = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
+    if (!$semantic_linkbacks_canonical) {
+      $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
     }
 
     // parse host
-    $host = parse_url($url, PHP_URL_HOST);
+    $host = parse_url($semantic_linkbacks_canonical, PHP_URL_HOST);
     // strip leading www, if any
     $host = preg_replace("/^www\./", "", $host);
 
     // generate output
-    $text = sprintf($comment_type_excerpts[$comment_type], get_comment_author_link($comment->comment_ID), $post_format, $url, $host);
+    $text = sprintf($comment_type_excerpts[$semantic_linkbacks_type], get_comment_author_link($comment->comment_ID), $post_formatstrings[$post_format], $semantic_linkbacks_canonical, $host);
 
     return apply_filters("semantic_linkbacks_excerpt", $text);
   }
 
   /**
-   * replaces the default avatar with the webmention uf2 photo
+   * replaces the default avatar with the WebMention uf2 photo
    *
    * @param string $avatar the avatar-url
    * @param int|string|object $id_or_email A user ID, email address, or comment object
@@ -294,7 +339,9 @@ class SemanticLinkbacksPlugin {
    * @return string new avatar-url
    */
   public static function get_avatar($avatar, $id_or_email, $size, $default = '', $alt = '') {
-    if (!is_object($id_or_email) || !isset($id_or_email->comment_type) || !get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true)) {
+    if (!is_object($id_or_email) ||
+        !isset($id_or_email->comment_type) ||
+        !get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true)) {
       return $avatar;
     }
 
@@ -305,10 +352,11 @@ class SemanticLinkbacksPlugin {
       return $avatar;
     }
 
-    if (false === $alt)
+    if (false === $alt) {
       $safe_alt = '';
-    else
+    } else {
       $safe_alt = esc_attr($alt);
+    }
 
     $avatar = "<img alt='{$safe_alt}' src='{$sl_avatar}' class='avatar avatar-{$size} photo u-photo avatar-semantic-linkbacks' height='{$size}' width='{$size}' />";
     return $avatar;
@@ -323,8 +371,10 @@ class SemanticLinkbacksPlugin {
    * @return string the linkback source or the original comment link
    */
   public static function get_comment_link($link, $comment, $args) {
-    if (is_singular() && $canonical = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_canonical', true)) {
-      return $canonical;
+    $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_canonical', true);
+
+    if (is_singular() && $semantic_linkbacks_canonical) {
+      return $semantic_linkbacks_canonical;
     }
 
     return $link;
@@ -347,9 +397,7 @@ class SemanticLinkbacksPlugin {
   }
 
   /**
-   *
-   *
-   *
+   * add comment classes from `semantic_linkbacks_type`s
    *
    * @return array the extended comment classes as array
    */
@@ -373,11 +421,11 @@ class SemanticLinkbacksPlugin {
       'rsvp:tracking' => 'h-as-rsvp'
     );
 
-    $comment_type = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_type', true);
+    $semantic_linkbacks_type = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_type', true);
 
     // check the comment type
-    if ($comment_type && isset($class_mapping[$comment_type])) {
-      $classes[] = $class_mapping[$comment_type];
+    if ($semantic_linkbacks_type && isset($class_mapping[$semantic_linkbacks_type])) {
+      $classes[] = $class_mapping[$semantic_linkbacks_type];
 
       $classes = array_unique($classes);
     }
@@ -402,7 +450,7 @@ class SemanticLinkbacksPlugin {
 }
 
 /**
- * Get a Count of Linkbacks by Type
+ * get a Count of Linkbacks by Type
  *
  * @param string $type the comment type
  * @param int $post_id the id of the post
@@ -430,7 +478,7 @@ function get_linkbacks_number($type = null, $post_id = 0) {
 }
 
 /**
- * Returns comments of linkback type
+ * returns comments of linkback type
  *
  * @param string $type the comment type
  * @param int $post_id the id of the post
