@@ -7,7 +7,6 @@
  Author URI: http://notizblog.org/
  Version: 3.0.5
  Text Domain: semantic_linkbacks
- Domain Path: /languages
 */
 
 if (!class_exists("SemanticLinkbacksPlugin")) :
@@ -37,12 +36,11 @@ class SemanticLinkbacksPlugin {
    * initialize the plugin, registering WordPess hooks.
    */
   public static function init() {
-    // for plugins
-    load_plugin_textdomain(
-      "semantic_linkbacks", // unique slug
-      false, // deprecated
-      dirname(plugin_basename(__FILE__)) . "/languages/"
-    );
+    if (did_action('plugins_loaded')) {
+      self::plugin_textdomain();
+    } else {
+      add_action('plugins_loaded', array('SemanticLinkbacksPlugin', 'plugin_textdomain'), 99);
+    }
 
     // hook into linkback functions to add more semantics
     add_action('pingback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
@@ -61,6 +59,14 @@ class SemanticLinkbacksPlugin {
     add_filter('get_comment_author_url', array('SemanticLinkbacksPlugin', 'get_comment_author_url'), 99, 3);
     add_filter('get_avatar_comment_types', array('SemanticLinkbacksPlugin', 'get_avatar_comment_types'));
     add_filter('comment_class', array('SemanticLinkbacksPlugin', 'comment_class'), 10, 4);
+  }
+
+  /**
+   * Load language files
+   */
+  public static function plugin_textdomain() {
+    // Note to self, the third argument must not be hardcoded, to account for relocated folders.
+    load_plugin_textdomain('semantic_linkbacks', false, dirname(plugin_basename(__FILE__)) . '/languages');
   }
 
   /**
@@ -171,18 +177,18 @@ class SemanticLinkbacksPlugin {
    */
   public static function get_comment_type_excerpts() {
     $strings = array(
-      'mention'       => _x('%1$s mentioned %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
+      'mention'       => __('%1$s mentioned %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
 
-      'reply'         => _x('%1$s replied to %2$s on <a href="%3$s">%4$s</a>',  'semantic_linkbacks'),
-      'repost'        => _x('%1$s reposted %2$s on <a href="%3$s">%4$s</a>',    'semantic_linkbacks'),
-      'like'          => _x('%1$s liked %2$s on <a href="%3$s">%4$s</a>',       'semantic_linkbacks'),
-      'favorite'      => _x('%1$s favorited %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'),
-      'tagged'        => _x('%1$s tagged %2$s on <a href="%3$s">%4$s</a>',      'semantic_linkbacks'),
-      'rsvp:yes'      => _x('%1$s is <strong>attending</strong>',               'semantic_linkbacks'),
-      'rsvp:no'       => _x('%1$s is <strong>not attending</strong>',           'semantic_linkbacks'),
-      'rsvp:maybe'    => _x('Maybe %1$s will be <strong>attending</strong>',    'semantic_linkbacks'),
-      'rsvp:invited'  => _x('%1$s is <strong>invited</strong>',                 'semantic_linkbacks'),
-      'rsvp:tracking' => _x('%1$s <strong>tracks</strong> this event',          'semantic_linkbacks')
+      'reply'         => __('%1$s replied to %2$s on <a href="%3$s">%4$s</a>',  'semantic_linkbacks'),
+      'repost'        => __('%1$s reposted %2$s on <a href="%3$s">%4$s</a>',    'semantic_linkbacks'),
+      'like'          => __('%1$s liked %2$s on <a href="%3$s">%4$s</a>',       'semantic_linkbacks'),
+      'favorite'      => __('%1$s favorited %2$s on <a href="%3$s">%4$s</a>',   'semantic_linkbacks'),
+      'tagged'        => __('%1$s tagged %2$s on <a href="%3$s">%4$s</a>',      'semantic_linkbacks'),
+      'rsvp:yes'      => __('%1$s is <strong>attending</strong>',               'semantic_linkbacks'),
+      'rsvp:no'       => __('%1$s is <strong>not attending</strong>',           'semantic_linkbacks'),
+      'rsvp:maybe'    => __('Maybe %1$s will be <strong>attending</strong>',    'semantic_linkbacks'),
+      'rsvp:invited'  => __('%1$s is <strong>invited</strong>',                 'semantic_linkbacks'),
+      'rsvp:tracking' => __('%1$s <strong>tracks</strong> this event',          'semantic_linkbacks')
     );
 
     return $strings;
@@ -195,18 +201,18 @@ class SemanticLinkbacksPlugin {
   */
   public static function get_comment_type_strings() {
     $strings = array(
-      'mention'       => _x('Mention',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
+      'mention'       => __('Mention',   'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
 
-      'reply'         => _x('Reply',     'semantic_linkbacks'),
-      'repost'        => _x('Repost',    'semantic_linkbacks'),
-      'like'          => _x('Like',      'semantic_linkbacks'),
-      'favorite'      => _x('Favorite',  'semantic_linkbacks'),
-      'tag'           => _x('Tag',       'semantic_linkbacks'),
-      'rsvp:yes'      => _x('RSVP',      'semantic_linkbacks'),
-      'rsvp:no'       => _x('RSVP',      'semantic_linkbacks'),
-      'rsvp:invited'  => _x('RSVP',      'semantic_linkbacks'),
-      'rsvp:maybe'    => _x('RSVP',      'semantic_linkbacks'),
-      'rsvp:tracking' => _x('RSVP',      'semantic_linkbacks')
+      'reply'         => __('Reply',     'semantic_linkbacks'),
+      'repost'        => __('Repost',    'semantic_linkbacks'),
+      'like'          => __('Like',      'semantic_linkbacks'),
+      'favorite'      => __('Favorite',  'semantic_linkbacks'),
+      'tag'           => __('Tag',       'semantic_linkbacks'),
+      'rsvp:yes'      => __('RSVP',      'semantic_linkbacks'),
+      'rsvp:no'       => __('RSVP',      'semantic_linkbacks'),
+      'rsvp:invited'  => __('RSVP',      'semantic_linkbacks'),
+      'rsvp:maybe'    => __('RSVP',      'semantic_linkbacks'),
+      'rsvp:tracking' => __('RSVP',      'semantic_linkbacks')
     );
 
     return $strings;
@@ -219,17 +225,17 @@ class SemanticLinkbacksPlugin {
   */
   public static function get_post_format_strings() {
     $strings = array(
-      'standard' => _x('this Article',  'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
+      'standard' => __('this Article',  'semantic_linkbacks'), // Special case. any value that evals to false will be considered standard
 
-      'aside'    => _x('this Aside',    'semantic_linkbacks'),
-      'chat'     => _x('this Chat',     'semantic_linkbacks'),
-      'gallery'  => _x('this Gallery',  'semantic_linkbacks'),
-      'link'     => _x('this Link',     'semantic_linkbacks'),
-      'image'    => _x('this Image',    'semantic_linkbacks'),
-      'quote'    => _x('this Quote',    'semantic_linkbacks'),
-      'status'   => _x('this Status',   'semantic_linkbacks'),
-      'video'    => _x('this Video',    'semantic_linkbacks'),
-      'audio'    => _x('this Audio',    'semantic_linkbacks'),
+      'aside'    => __('this Aside',    'semantic_linkbacks'),
+      'chat'     => __('this Chat',     'semantic_linkbacks'),
+      'gallery'  => __('this Gallery',  'semantic_linkbacks'),
+      'link'     => __('this Link',     'semantic_linkbacks'),
+      'image'    => __('this Image',    'semantic_linkbacks'),
+      'quote'    => __('this Quote',    'semantic_linkbacks'),
+      'status'   => __('this Status',   'semantic_linkbacks'),
+      'video'    => __('this Video',    'semantic_linkbacks'),
+      'audio'    => __('this Audio',    'semantic_linkbacks'),
     );
 
     return $strings;
