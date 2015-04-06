@@ -63,7 +63,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      * mentions
      * @link http://indiewebcamp.com/mentions
      */
-    $class_mapper["mention"]     = "mention";
+    //$class_mapper["mention"]     = "mention";
 
     /*
      * rsvp
