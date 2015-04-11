@@ -5,7 +5,7 @@
  Description: Semantic Linkbacks for WebMentions, Trackbacks and Pingbacks
  Author: pfefferle & acegiak
  Author URI: http://notizblog.org/
- Version: 3.0.5
+ Version: 3.1.0
  Text Domain: semantic_linkbacks
 */
 
