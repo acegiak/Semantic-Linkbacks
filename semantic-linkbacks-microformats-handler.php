@@ -1,5 +1,5 @@
 <?php
-if(!function_exists ("Mf2\parse")) {
+if(!class_exists("Mf2\Parser")) {
   require_once 'Mf2/Parser.php';
 }
 
@@ -39,7 +39,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     $class_mapper["reply-of"]    = "reply";
 
     /*
-     * likes
+     * repost
      * @link http://indiewebcamp.com/repost
      */
     $class_mapper["repost"]      = "repost";
@@ -63,13 +63,20 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
      * mentions
      * @link http://indiewebcamp.com/mentions
      */
-    $class_mapper["mention"]     = "mention";
+    //$class_mapper["mention"]     = "mention";
 
     /*
      * rsvp
      * @link http://indiewebcamp.com/rsvp
      */
     $class_mapper["rsvp"]        = "rsvp";
+
+    /*
+     * tag
+     * @link http://indiewebcamp.com/tag
+     */
+    $class_mapper["tag-of"]      = "tag";
+
 
     return apply_filters("semantic_linkbacks_microformats_class_mapper", $class_mapper);
   }

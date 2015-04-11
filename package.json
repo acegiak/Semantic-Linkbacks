@@ -1,30 +1,32 @@
 {
-	"name": "wordpress-semantic-linkbacks",
-	"version": "3.0.2",
-	"description": "Semantic Trackbacks/Pingbacks/WebMentions for WordPress!",
-	"main": "index.js",
-	"dependencies": {
-		"grunt": "^0.4.5"
-	},
-	"devDependencies": {
-		"grunt": "^0.4.5",
-		"grunt-wp-readme-to-markdown": "^0.8.0"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/pfefferle/wordpress-semantic-linkbacks.git"
-	},
-	"keywords": [
-		"wordpress",
-		"webmention",
-		"pingback",
-		"trackback",
-		"linkback"
-	],
-	"author": "Matthias Pfefferle",
-	"license": "GPL-2.0+",
-	"bugs": {
-		"url": "https://github.com/pfefferle/wordpress-semantic-linkbacks/issues"
-	},
-	"homepage": "https://github.com/pfefferle/wordpress-semantic-linkbacks"
+  "name": "wordpress-semantic-linkbacks",
+  "version": "3.0.2",
+  "description": "Semantic Trackbacks/Pingbacks/WebMentions for WordPress!",
+  "main": "index.js",
+  "dependencies": {
+    "grunt": "^0.4.5"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-wp-deploy": "^1.0.3",
+    "grunt-wp-i18n": "^0.5.0",
+    "grunt-wp-readme-to-markdown": "^0.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pfefferle/wordpress-semantic-linkbacks.git"
+  },
+  "keywords": [
+    "wordpress",
+    "webmention",
+    "pingback",
+    "trackback",
+    "linkback"
+  ],
+  "author": "Matthias Pfefferle",
+  "license": "GPL-2.0+",
+  "bugs": {
+    "url": "https://github.com/pfefferle/wordpress-semantic-linkbacks/issues"
+  },
+  "homepage": "https://github.com/pfefferle/wordpress-semantic-linkbacks"
 }
