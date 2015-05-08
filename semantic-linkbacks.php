@@ -341,8 +341,11 @@ class SemanticLinkbacksPlugin {
    */
   public static function pre_get_avatar_data($args, $id_or_email) {
     if(!isset($args['class']) ) {
-        $args['class']=array('u-photo');
+      $args['class']=array('u-photo');
     }
+    else {
+      $args['class'][]='u-photo';
+    }  
     if (!is_object($id_or_email) ||
         !isset($id_or_email->comment_type) ||
         !get_comment_meta($id_or_email->comment_ID, 'semantic_linkbacks_avatar', true)) {
