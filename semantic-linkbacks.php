@@ -290,7 +290,7 @@ class SemanticLinkbacksPlugin {
   public static function comment_text_excerpt($text, $comment = null, $args = array()) {
     $semantic_linkbacks_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true);
 
-    // only change text for pinbacks/trackbacks/webmentions
+    // only change text for pingbacks/trackbacks/webmentions
     if (!$comment ||
         $comment->comment_type == "" ||
         $semantic_linkbacks_type == "reply") {
@@ -411,7 +411,7 @@ class SemanticLinkbacksPlugin {
       'mention'       => array('h-as-mention'),
 
       'reply'         => array('h-as-reply'),
-      'repost'        => array('h-as-repost', 'u-repost'),
+      'repost'        => array('h-as-repost', 'p-repost'),
       'like'          => array('h-as-like', 'p-like'),
       'favorite'      => array('h-as-favorite', 'p-favorite'),
       'tag'           => array('h-as-tag', 'p-tag'),
