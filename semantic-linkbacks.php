@@ -406,27 +406,27 @@ class SemanticLinkbacksPlugin {
     // get comment
     $comment = get_comment($comment_id);
 
-    // "commment type to class" mapper
+    // "comment type to class" mapper
     $class_mapping = array(
-      'mention'       => 'h-as-mention',
+      'mention'       => array('h-as-mention'),
 
-      'reply'         => 'h-as-reply',
-      'repost'        => 'h-as-repost',
-      'like'          => 'h-as-like',
-      'favorite'      => 'h-as-favorite',
-      'tag'           => 'h-as-tag',
-      'rsvp:yes'      => 'h-as-rsvp',
-      'rsvp:no'       => 'h-as-rsvp',
-      'rsvp:maybe'    => 'h-as-rsvp',
-      'rsvp:invited'  => 'h-as-rsvp',
-      'rsvp:tracking' => 'h-as-rsvp'
+      'reply'         => array('h-as-reply'),
+      'repost'        => array('h-as-repost', 'u-repost'),
+      'like'          => array('h-as-like', 'p-like'),
+      'favorite'      => array('h-as-favorite', 'p-favorite'),
+      'tag'           => array('h-as-tag', 'p-tag'),
+      'rsvp:yes'      => array('h-as-rsvp'),
+      'rsvp:no'       => array('h-as-rsvp'),
+      'rsvp:maybe'    => array('h-as-rsvp'),
+      'rsvp:invited'  => array('h-as-rsvp'),
+      'rsvp:tracking' => array('h-as-rsvp')
     );
 
     $semantic_linkbacks_type = get_comment_meta($comment->comment_ID, 'semantic_linkbacks_type', true);
 
     // check the comment type
     if ($semantic_linkbacks_type && isset($class_mapping[$semantic_linkbacks_type])) {
-      $classes[] = $class_mapping[$semantic_linkbacks_type];
+      $classes = array_merge($classes, $class_mapping[$semantic_linkbacks_type]);
 
       $classes = array_unique($classes);
     }
