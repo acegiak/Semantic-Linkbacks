@@ -249,8 +249,12 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 			$comment_id = wp_new_comment( $childdata );
 			
 		}
+		if(isset($comment_id) && self::check_mf_attr('photo', $author)){
+			add_comment_meta( $comment_id, semantic_linkbacks_avatar, $author['photo'][0] );
+			unset ($comment_id);
+		}
 
-		error_log("CHILD COMMENT ENTERING:".print_r($childdata,true));
+		//error_log("CHILD COMMENT ENTERING:".print_r($childdata,true));
 	}
 
     }
