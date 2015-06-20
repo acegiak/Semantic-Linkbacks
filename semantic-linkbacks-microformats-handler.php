@@ -220,24 +220,29 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 			'comment_post_ID' => $postid, // to which post the comment will show up
 			'comment_author' => $authorname, //fixed value - can be dynamic 
 			'comment_content' => $content, //fixed value - can be dynamic 
-			'comment_type' => $type, //empty for regular comments, 'pingback' for pingbacks, 'trackback' for trackbacks
-			'comment_parent' => $commentdata['comment_ID'], //0 if it's not a reply to another comment; if it's a reply, mention the parent comment ID here
+			'comment_type' => "", //empty for regular comments, 'pingback' for pingbacks, 'trackback' for trackbacks
+			'comment_parent' => 0,//$commentdata['comment_ID'], //0 if it's not a reply to another comment; if it's a reply, mention the parent comment ID here
 			'user_id' => $current_user->ID, //passing current user ID or any predefined as per the demand
 		);
 		if (self::check_mf_attr('url', $child)) {
 			$args = array(
 				'post_id' => $postid,
-				'comment_author_url'=>$child['url']
 			);
 			$foundcomments = get_comments($args);
+			$updatedcomments = 0;
 			if(!empty($foundcomments)){
 				$foundcomment = get_comment( $foundcomments[0]->comment_ID, ARRAY_A );
+				$canonical = get_comment_meta( $comment->comment_ID,'semantic_linkbacks_canonical', true );
+				if($canonical == $child['url']){
 				foreach($childdata as $ck=>$cv){
 					$foundcomment[$ck]=$cv;
 				}
 
 				wp_update_comment( $foundcomment );
-			}else{
+				$updatedcomments++;
+				}
+			}
+			if($updatedcomments <= 0){
 				$childdata['comment_author_url'] = $child['url'][0];
 				$childdata['comment_approved'] = 0;
 				$comment_id = wp_new_comment( $childdata );
@@ -245,12 +250,16 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 			
 		}else{
 			//Insert new comment and get the comment ID
-				$childdata['comment_approved'] = 0;
+			$childdata['comment_approved'] = 0;
+			$childdata['comment_author_url'] = $child['url'][0];
 			$comment_id = wp_new_comment( $childdata );
-			
 		}
+
 		if(isset($comment_id) && self::check_mf_attr('photo', $author)){
-			add_comment_meta( $comment_id, semantic_linkbacks_avatar, $author['photo'][0] );
+			add_comment_meta( $comment_id, 'semantic_linkbacks_avatar', $author['photo'][0] );
+			add_comment_meta( $comment_id, 'semantic_linkbacks_canonical', $child['url'][0] );
+			add_comment_meta( $comment_id, 'semantic_linkbacks_type', $type );
+
 			unset ($comment_id);
 		}
 
