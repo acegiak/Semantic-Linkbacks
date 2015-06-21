@@ -232,14 +232,16 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 			$updatedcomments = 0;
 			if(!empty($foundcomments)){
 				$foundcomment = get_comment( $foundcomments[0]->comment_ID, ARRAY_A );
-				$canonical = get_comment_meta( $comment->comment_ID,'semantic_linkbacks_canonical', true );
-				if($canonical == $child['url']){
-				foreach($childdata as $ck=>$cv){
-					$foundcomment[$ck]=$cv;
-				}
-
-				wp_update_comment( $foundcomment );
-				$updatedcomments++;
+				$canonical = get_comment_meta( $foundcomments[0]->comment_ID,'semantic_linkbacks_canonical', true );
+				error_log("CANONICAL:".print_r($canonical,true)." vs CHILD URL:".print_r($child['url'][0],true));
+				if($canonical == $child['url'][0]){
+					foreach($childdata as $ck=>$cv){
+						$foundcomment[$ck]=$cv;
+					}	
+	
+					$foundcomment['comment_approved'] = 0;
+					wp_update_comment( $foundcomment );
+					$updatedcomments++;
 				}
 			}
 			if($updatedcomments <= 0){
@@ -256,9 +258,9 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 		}
 
 		if(isset($comment_id) && self::check_mf_attr('photo', $author)){
-			add_comment_meta( $comment_id, 'semantic_linkbacks_avatar', $author['photo'][0] );
-			add_comment_meta( $comment_id, 'semantic_linkbacks_canonical', $child['url'][0] );
-			add_comment_meta( $comment_id, 'semantic_linkbacks_type', $type );
+			update_comment_meta( $comment_id, 'semantic_linkbacks_avatar', $author['photo'][0] );
+			update_comment_meta( $comment_id, 'semantic_linkbacks_canonical', $child['url'][0] );
+			update_comment_meta( $comment_id, 'semantic_linkbacks_type', $type );
 
 			unset ($comment_id);
 		}
