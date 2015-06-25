@@ -43,9 +43,7 @@ class SemanticLinkbacksPlugin {
     }
 
     // hook into linkback functions to add more semantics
-    add_action('pingback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
-    add_action('trackback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
-    add_action('webmention_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
+    add_action('comment_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
     add_filter('pre_get_avatar_data', array('SemanticLinkbacksPlugin', 'pre_get_avatar_data'), 11, 5);
     // To extend or to override the default behavior, just use the `comment_text` filter with a lower
     // priority (so that it's called after this one) or remove the filters completely in
@@ -86,7 +84,9 @@ class SemanticLinkbacksPlugin {
     if (!$commentdata) {
       return $comment_ID;
     }
-
+    if ($commentdata['comment_type']=="") {
+      return $comment_ID;
+    }
     // source
     $source = esc_url_raw($commentdata['comment_author_url']);
 
