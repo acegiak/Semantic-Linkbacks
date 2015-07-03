@@ -33,7 +33,7 @@ if (version_compare(phpversion(), 5.3, '>=')) {
  */
 class SemanticLinkbacksPlugin {
   /**
-   * initialize the plugin, registering WordPess hooks.
+   * initialize the plugin, registering WordPress hooks.
    */
   public static function init() {
     if (did_action('plugins_loaded')) {
@@ -43,9 +43,7 @@ class SemanticLinkbacksPlugin {
     }
 
     // hook into linkback functions to add more semantics
-    add_action('pingback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
-    add_action('trackback_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
-    add_action('webmention_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
+    add_action('comment_post', array('SemanticLinkbacksPlugin', 'linkback_fix'));
     add_filter('pre_get_avatar_data', array('SemanticLinkbacksPlugin', 'pre_get_avatar_data'), 11, 5);
     // To extend or to override the default behavior, just use the `comment_text` filter with a lower
     // priority (so that it's called after this one) or remove the filters completely in
@@ -57,6 +55,7 @@ class SemanticLinkbacksPlugin {
     add_filter('get_comment_author_url', array('SemanticLinkbacksPlugin', 'get_comment_author_url'), 99, 3);
     add_filter('get_avatar_comment_types', array('SemanticLinkbacksPlugin', 'get_avatar_comment_types'));
     add_filter('comment_class', array('SemanticLinkbacksPlugin', 'comment_class'), 10, 4);
+
   }
 
   /**
@@ -85,7 +84,9 @@ class SemanticLinkbacksPlugin {
     if (!$commentdata) {
       return $comment_ID;
     }
-
+    if ($commentdata['comment_type']=="") {
+      return $comment_ID;
+    }
     // source
     $source = esc_url_raw($commentdata['comment_author_url']);
 
@@ -240,6 +241,22 @@ class SemanticLinkbacksPlugin {
   }
 
   /**
+   * return correct URL
+   *
+   * @param WP_Comment $comment the comment object
+   * @return string the URL
+   */
+ public static function get_url($comment = null) {
+    // get URL canonical url...
+    $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
+    // ...or fall back to source
+    if (!$semantic_linkbacks_canonical) {
+      $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
+    }
+    return $semantic_linkbacks_canonical;
+  }
+
+  /**
    * add cite to "reply"s
    *
    * thanks to @snarfed for the idea
@@ -251,7 +268,6 @@ class SemanticLinkbacksPlugin {
    */
   public static function comment_text_add_cite($text, $comment = null, $args = array()) {
     $semantic_linkbacks_type = get_comment_meta($comment->comment_ID, "semantic_linkbacks_type", true);
-
     // only change text for "real" comments (replys)
     if (!$comment ||
         !$semantic_linkbacks_type ||
@@ -259,22 +275,15 @@ class SemanticLinkbacksPlugin {
         $semantic_linkbacks_type != "reply") {
       return $text;
     }
-
-    // get URL canonical url...
-    $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
-    // ...or fall back to source
-    if (!$semantic_linkbacks_canonical) {
-      $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
-    }
-
-    $host = parse_url($semantic_linkbacks_canonical, PHP_URL_HOST);
+    $url = self::get_url($comment);
+    $host = parse_url($url, PHP_URL_HOST);
 
     // strip leading www, if any
     $host = preg_replace("/^www\./", "", $host);
     // note that WordPress's sanitization strips the class="u-url". sigh. :/ also,
     // <cite> is one of the few elements that make it through the sanitization and
     // is still uncommon enough that we can use it for styling.
-    $text .= '<p><small>&mdash;&nbsp;<cite><a class="u-url" href="' . $semantic_linkbacks_canonical . '">via ' . $host . '</a></cite></small></p>';
+    $text .= '<p><small>&mdash;&nbsp;<cite><a class="u-url" href="' . $url . '">via ' . $host . '</a></cite></small></p>';
 
     return apply_filters("semantic_linkbacks_cite", $text);
   }
@@ -301,33 +310,32 @@ class SemanticLinkbacksPlugin {
     if (!in_array($semantic_linkbacks_type, array_keys(self::get_comment_type_strings()))) {
       $semantic_linkbacks_type = "mention";
     }
+    if (current_theme_supports('post-formats') ) {
+      $post_format = get_post_format($comment->comment_post_ID);
+      // replace "standard" with "Article"
+      if (!$post_format || !in_array($post_format, array_keys(self::get_post_format_strings()))) {
+        $post_format = "standard";
+      }
 
-    $post_format = get_post_format($comment->comment_post_ID);
-
-    // replace "standard" with "Article"
-    if (!$post_format || !in_array($post_format, array_keys(self::get_post_format_strings()))) {
-      $post_format = "standard";
+      $post_formatstrings = self::get_post_format_strings();
+      $post_type = $post_formatstrings[$post_format];
     }
-
-    $post_formatstrings = self::get_post_format_strings();
+    else {
+      $post_type = __('this post',    'semantic_linkbacks');
+      $post_type = apply_filters('semantic_linkbacks_post_type', $post_type, $comment->comment_post_ID);    }
 
     // get all the excerpts
     $comment_type_excerpts = self::get_comment_type_excerpts();
 
-    // get URL canonical url...
-    $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_canonical", true);
-    // ...or fall back to source
-    if (!$semantic_linkbacks_canonical) {
-      $semantic_linkbacks_canonical = get_comment_meta($comment->comment_ID, "semantic_linkbacks_source", true);
-    }
+    $url = self::get_url($comment);
 
     // parse host
-    $host = parse_url($semantic_linkbacks_canonical, PHP_URL_HOST);
+    $host = parse_url($url, PHP_URL_HOST);
     // strip leading www, if any
     $host = preg_replace("/^www\./", "", $host);
 
     // generate output
-    $text = sprintf($comment_type_excerpts[$semantic_linkbacks_type], get_comment_author_link($comment->comment_ID), $post_formatstrings[$post_format], $semantic_linkbacks_canonical, $host);
+    $text = sprintf($comment_type_excerpts[$semantic_linkbacks_type], get_comment_author_link($comment->comment_ID), $post_type, $url, $host);
 
     return apply_filters("semantic_linkbacks_excerpt", $text);
   }
@@ -448,6 +456,7 @@ class SemanticLinkbacksPlugin {
 
     return $types;
   }
+
 }
 
 /**
