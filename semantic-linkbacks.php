@@ -260,6 +260,7 @@ class SemanticLinkbacksPlugin {
 		if ( ! $semantic_linkbacks_canonical ) {
 			$semantic_linkbacks_canonical = $comment->comment_author_url;
 		}
+
 		return $semantic_linkbacks_canonical;
 	}
 
@@ -310,6 +311,7 @@ class SemanticLinkbacksPlugin {
 		// only change text for pingbacks/trackbacks/webmentions
 		if ( ! $comment ||
 			'' == $comment->comment_type ||
+			! $semantic_linkbacks_type ||
 			'reply' == $semantic_linkbacks_type ) {
 			return $text;
 		}
