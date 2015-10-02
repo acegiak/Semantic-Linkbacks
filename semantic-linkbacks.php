@@ -49,6 +49,7 @@ class SemanticLinkbacksPlugin {
 		// your code: `remove_filter('comment_text', array('SemanticLinkbacksPlugin', 'comment_text_add_cite'), 11);`
 		add_filter( 'comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_add_cite' ), 11, 3 );
 		add_filter( 'comment_text', array( 'SemanticLinkbacksPlugin', 'comment_text_excerpt' ), 12, 3 );
+		add_filter( 'comment_excerpt', array( 'SemanticLinkbacksPlugin', 'comment_excerpt' ), 12, 2 );
 
 		add_filter( 'get_comment_link', array( 'SemanticLinkbacksPlugin', 'get_comment_link' ), 99, 3 );
 		add_filter( 'get_comment_author_url', array( 'SemanticLinkbacksPlugin', 'get_comment_author_url' ), 99, 3 );
@@ -354,6 +355,18 @@ class SemanticLinkbacksPlugin {
 
 		return apply_filters( 'semantic_linkbacks_excerpt', $text );
 	}
+
+	/**
+	 * generate excerpt for all types except "reply"
+	 *
+	 * @param string $comment_excerpt the comment text
+	 * @param int $comment_id the comment id
+	 * @return string the filtered comment text
+	 */
+	public static function comment_excerpt( $comment_excerpt, $comment_id = null) {
+		return self::comment_text_excerpt( $comment_excerpt, get_comment($comment_id) );
+	}
+
 
 	/**
 	 * replaces the default avatar with the WebMention uf2 photo
