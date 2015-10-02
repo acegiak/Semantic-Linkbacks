@@ -41,7 +41,7 @@ class SemanticLinkbacksPlugin {
 		}
 
 		// hook into linkback functions to add more semantics
-		add_action( 'comment_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ) );
+		add_action( 'comment_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ), 9 );
 
 		add_filter( 'pre_get_avatar_data', array( 'SemanticLinkbacksPlugin', 'pre_get_avatar_data' ), 11, 5 );
 		// To extend or to override the default behavior, just use the `comment_text` filter with a lower
