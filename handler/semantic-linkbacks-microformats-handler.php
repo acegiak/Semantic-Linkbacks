@@ -104,6 +104,8 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 * @param WP_Comment $commentdata the comment object
 	 * @param string $target the target url
 	 * @param string $html the parsed html
+	 *
+	 * @return array
 	 */
 	public static function generate_commentdata( $commentdata, $target, $html ) {
 		global $wpdb;
@@ -203,6 +205,8 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 *
 	 * @param array $mf_array the microformats array
 	 * @param array the h-entry array
+	 *
+	 * @return array
 	 */
 	public static function get_entries( $mf_array ) {
 		$entries = array();
@@ -244,6 +248,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 *
 	 * @param array $mf_array the parsed microformats array
 	 * @param string $source the source url
+	 *
 	 * @return array|null the h-card node or null
 	 */
 	public static function get_representative_author( $mf_array, $source ) {
@@ -271,6 +276,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 *
 	 * @param array $mf_array the parsed microformats array
 	 * @param string $target the target url
+	 *
 	 * @return array the h-entry node or false
 	 */
 	public static function get_representative_entry( $entries, $target ) {
@@ -324,6 +330,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 * @param string $target the target url
 	 * @param array $entry the represantative entry
 	 * @param array $mf_array the document
+	 *
 	 * @return string the post-type
 	 */
 	public static function get_entry_type( $target, $entry, $mf_array = array() ) {
@@ -397,11 +404,11 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 *
 	 * @param string $needle the target url
 	 * @param array $haystack a list of urls
-	 * @param boolean $schemelesse define if the target url should be checked
-	 *		with http:// and https://
+	 * @param boolean $schemelesse define if the target url should be checked with http:// and https://
+	 *
 	 * @return boolean
 	 */
-	public static function compare_urls($needle, $haystack, $schemeless = true) {
+	public static function compare_urls( $needle, $haystack, $schemeless = true ) {
 		if ( true === $schemeless ) {
 			// remove url-scheme
 			$schemeless_target = preg_replace( '/^https?:\/\//i', '', $needle );
