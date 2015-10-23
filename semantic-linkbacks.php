@@ -299,7 +299,7 @@ class SemanticLinkbacksPlugin {
 		// note that WordPress's sanitization strips the class="u-url". sigh. :/ also,
 		// <cite> is one of the few elements that make it through the sanitization and
 		// is still uncommon enough that we can use it for styling.
-		$text .= '<p><small>&mdash;&nbsp;<cite><a class="u-url" href="' . $url . '">via ' . $host . '</a></cite></small></p>';
+		$text .= '<p><cite><a class="u-url" href="' . $url . '">via ' . $host . '</a></cite></p>';
 
 		return apply_filters( 'semantic_linkbacks_cite', $text );
 	}
