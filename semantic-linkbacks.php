@@ -1,13 +1,13 @@
 <?php
-/*
- Plugin Name: Semantic-Linkbacks
- Plugin URI: https://github.com/pfefferle/wordpress-semantic-linkbacks
- Description: Semantic Linkbacks for WebMentions, Trackbacks and Pingbacks
- Author: pfefferle
- Author URI: http://notizblog.org/
- Version: 3.2.0
- Text Domain: semantic_linkbacks
-*/
+/**
+ * Plugin Name: Semantic-Linkbacks
+ * Plugin URI: https://github.com/pfefferle/wordpress-semantic-linkbacks
+ * Description: Semantic Linkbacks for WebMentions, Trackbacks and Pingbacks
+ * Author: pfefferle
+ * Author URI: http://notizblog.org/
+ * Version: 3.2.0
+ * Text Domain: semantic_linkbacks
+ */
 
 // check if php version is >= 5.3
 // version is required by the mf2 parser
@@ -25,13 +25,13 @@ if ( version_compare( phpversion(), 5.3, '>=' ) ) {
 }
 
 /**
- * semantic linkbacks class
+ * Semantic linkbacks class
  *
  * @author Matthias Pfefferle
  */
 class SemanticLinkbacksPlugin {
 	/**
-	 * initialize the plugin, registering WordPress hooks.
+	 * Initialize the plugin, registering WordPress hooks.
 	 */
 	public static function init() {
 		if ( did_action( 'plugins_loaded' ) ) {
@@ -41,7 +41,12 @@ class SemanticLinkbacksPlugin {
 		}
 
 		// hook into linkback functions to add more semantics
-		add_action( 'comment_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ), 9 );
+		// FIXME temporarily removed because it does not support updates
+		// add_action( 'comment_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ), 9 );
+		add_action( 'pingback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ), 9 );
+		// FIXME temporarily added because the `comment_post` does not support updates
+		add_action( 'trackback_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ), 9 );
+		add_action( 'webmention_post', array( 'SemanticLinkbacksPlugin', 'linkback_fix' ), 9 );
 
 		add_filter( 'pre_get_avatar_data', array( 'SemanticLinkbacksPlugin', 'pre_get_avatar_data' ), 11, 5 );
 		// To extend or to override the default behavior, just use the `comment_text` filter with a lower
@@ -55,7 +60,6 @@ class SemanticLinkbacksPlugin {
 		add_filter( 'get_comment_author_url', array( 'SemanticLinkbacksPlugin', 'get_comment_author_url' ), 99, 3 );
 		add_filter( 'get_avatar_comment_types', array( 'SemanticLinkbacksPlugin', 'get_avatar_comment_types' ) );
 		add_filter( 'comment_class', array( 'SemanticLinkbacksPlugin', 'comment_class' ), 10, 4 );
-
 	}
 
 	/**
@@ -67,7 +71,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * nicer semantic linkbacks
+	 * Nicer semantic linkbacks
 	 *
 	 * @param int $comment_ID the comment id
 	 */
@@ -171,13 +175,13 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * returns an array of comment type excerpts to their translated and pretty display versions
+	 * Returns an array of comment type excerpts to their translated and pretty display versions
 	 *
 	 * @return array The array of translated post format excerpts.
 	 */
 	public static function get_comment_type_excerpts() {
 		$strings = array(
-			// Special case. any value that evals to false will be considered standard
+			// special case. any value that evals to false will be considered standard
 			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>',	'semantic_linkbacks' ),
 
 			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>',	'semantic_linkbacks' ),
@@ -197,7 +201,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	* returns an array of comment type slugs to their translated and pretty display versions
+	* Returns an array of comment type slugs to their translated and pretty display versions
 	*
 	* @return array The array of translated comment type names.
 	*/
@@ -223,7 +227,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	* returns an array of post formats (with articlex)
+	* Returns an array of post formats (with articlex)
 	*
 	* @return array The array of translated comment type names.
 	*/
@@ -247,7 +251,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * return correct URL
+	 * Return correct URL
 	 *
 	 * @param WP_Comment $comment the comment object
 	 * @return string the URL
@@ -268,7 +272,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * add cite to "reply"s
+	 * Add cite to "reply"s
 	 *
 	 * thanks to @snarfed for the idea
 	 *
@@ -305,7 +309,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * generate excerpt for all types except "reply"
+	 * Generate excerpt for all types except "reply"
 	 *
 	 * @param string $text the comment text
 	 * @param WP_Comment $comment the comment object
@@ -368,7 +372,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * replaces the default avatar with the WebMention uf2 photo
+	 * Replaces the default avatar with the WebMention uf2 photo
 	 *
 	 * @param array $args Arguments passed to get_avatar_data(), after processing.
 	 * @param int|string|object $id_or_email A user ID, email address, or comment object
@@ -399,7 +403,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * replace comment url with canonical url
+	 * Replace comment url with canonical url
 	 *
 	 * @param string $link the link url
 	 * @param obj $comment the comment object
@@ -417,7 +421,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * replace comment url with author url
+	 * Replace comment url with author url
 	 *
 	 * @param string $link the author url
 	 * @return string the replaced/parsed author url or the original comment link
@@ -433,7 +437,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * add comment classes from `semantic_linkbacks_type`s
+	 * Add comment classes from `semantic_linkbacks_type`s
 	 *
 	 * @return array the extended comment classes as array
 	 */
@@ -471,7 +475,7 @@ class SemanticLinkbacksPlugin {
 	}
 
 	/**
-	 * show avatars also on trackbacks and pingbacks
+	 * Show avatars also on trackbacks and pingbacks
 	 *
 	 * @param array $types list of avatar enabled comment types
 	 *
@@ -488,18 +492,16 @@ class SemanticLinkbacksPlugin {
 }
 
 /**
- * get a Count of Linkbacks by Type
+ * Get a Count of Linkbacks by Type
  *
  * @param string $type the comment type
  * @param int $post_id the id of the post
  *
  * @return the number of matching linkbacks
  */
-function get_linkbacks_number( $type = null, $post_id = 0 ) {
-	$post = get_post( $post_id );
-
+function get_linkbacks_number( $type = null, $post_ID = 0 ) {
 	$args = array(
-		'post_id'	=> $post->ID,
+		'post_id'	=> $post_ID,
 		'count'	 	=> true,
 		'status'	=> 'approve',
 	);
@@ -519,17 +521,16 @@ function get_linkbacks_number( $type = null, $post_id = 0 ) {
 }
 
 /**
- * returns comments of linkback type
+ * Returns comments of linkback type
  *
  * @param string $type the comment type
  * @param int $post_id the id of the post
  *
  * @return the matching linkback "comments"
  */
-function get_linkbacks( $type = null, $post_id = 0 ) {
-	$post = get_post( $post_id );
+function get_linkbacks( $type = null, $post_ID = 0 ) {
 	$args = array(
-		'post_id'	=> $post->ID,
+		'post_id'	=> $post_ID,
 		'status'	=> 'approve',
 	);
 
