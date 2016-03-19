@@ -224,7 +224,11 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 				'post_id' => $postid
 			);
 			$foundcomments = get_comments($args);
-			$canonical = get_comment_meta( $foundcomments[0]->comment_ID,'semantic_linkbacks_canonical', true );
+
+			$updatedcomments = 0;
+			if(!empty($foundcomments)){
+				$foundcomment = get_comment( $foundcomments[0]->comment_ID, ARRAY_A );
+				$canonical = get_comment_meta( $foundcomments[0]->comment_ID,'semantic_linkbacks_canonical', true );
 				error_log("CANONICAL:".print_r($canonical,true)." vs CHILD URL:".print_r($child['url'][0],true));
 				if($canonical == $child['url'][0]){
 					foreach($childdata as $ck=>$cv){
