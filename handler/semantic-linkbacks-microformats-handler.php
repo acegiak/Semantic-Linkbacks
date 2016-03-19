@@ -202,10 +202,21 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
     if (self::check_mf_attr('comment', $properties)) {
 	$postid = url_to_postid( $target );
 	foreach($properties['comment'] as $key=>$c){
+
+		error_log("CHILD MAJOR PARSING:".print_r($c,true));
 		$child = $c['properties'];
 		error_log("CHILD COMMENT PARSING:".print_r($child,true));
-    		if (!self::check_mf_attr('author', $child)) {error_log("NO AUTHOR! BREAKING!");break;}
-		$author = $child['author'][0]['properties'];
+
+		
+		if(self::check_mf_attr('author', $child)){
+			$author = $child['author'][0]['properties'];
+		}else if(self::check_mf_attr('children', $c) && $c['children'][0]['type'][0] == 'h-card'){
+			$author = $c['children'][0]['properties'];
+		}else{
+    			error_log("NO AUTHOR! BREAKING!");
+			break;
+		}
+		
     		if (!self::check_mf_attr('name', $author)) {error_log("NO AUTHOR NAME! BREAKING!");break;}
 		$authorname = $author['name'][0];
     		if (!self::check_mf_attr('content', $child)) {error_log("NO CONTENT! BREAKING!");break;}
