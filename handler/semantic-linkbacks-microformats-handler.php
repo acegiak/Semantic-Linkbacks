@@ -41,28 +41,24 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 		 * repost
 		 * @link http://indiewebcamp.com/repost
 		 */
-		$class_mapper['repost'] = 'repost';
 		$class_mapper['repost-of'] = 'repost';
 
 		/*
 		 * likes
 		 * @link http://indiewebcamp.com/likes
 		 */
-		$class_mapper['like'] = 'like';
 		$class_mapper['like-of'] = 'like';
 
 		/*
 		 * favorite
 		 * @link http://indiewebcamp.com/favorite
 		 */
-		$class_mapper['favorite'] = 'favorite';
 		$class_mapper['favorite-of'] = 'favorite';
 
 		/*
 		 * bookmark
 		 * @link http://indiewebcamp.com/bookmark
 		 */
-		$class_mapper['bookmark'] = 'bookmark';
 		$class_mapper['bookmark-of'] = 'bookmark';
 
 		/*
