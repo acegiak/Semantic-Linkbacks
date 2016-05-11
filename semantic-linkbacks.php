@@ -429,7 +429,7 @@ class SemanticLinkbacksPlugin {
 	public static function get_comment_author_url($link) {
 		global $comment;
 
-		if ( $author_url = get_comment_meta( $comment->comment_ID, 'semantic_linkbacks_author_url', true ) ) {
+		if ( is_object($comment) && $author_url = get_comment_meta( $comment->comment_ID, 'semantic_linkbacks_author_url', true ) ) {
 			return $author_url;
 		}
 
