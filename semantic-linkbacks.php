@@ -9,6 +9,9 @@
  * Text Domain: semantic_linkbacks
  */
 
+// Mentions with content less than this length will be rendered inline.
+define('MAX_INLINE_MENTION_LENGTH', 300);
+
 // check if php version is >= 5.3
 // version is required by the mf2 parser
 function semantic_linkbacks_activation() {
@@ -365,8 +368,10 @@ class SemanticLinkbacksPlugin {
 		// strip leading www, if any
 		$host = preg_replace( '/^www\./', '', $host );
 
-		// generate output
-		$text = sprintf( $comment_type_excerpts[ $semantic_linkbacks_type ], get_comment_author_link( $comment->comment_ID ), $post_type, $url, $host );
+		// generate output. use full content if it's small enough, otherwise use excerpt.
+		if ( ! ( $semantic_linkbacks_type == 'mention' && strlen( wp_strip_all_tags( $text ) ) <= MAX_INLINE_MENTION_LENGTH ) ) {
+			$text = sprintf( $comment_type_excerpts[ $semantic_linkbacks_type ], get_comment_author_link( $comment->comment_ID ), $post_type, $url, $host );
+		}
 
 		return apply_filters( 'semantic_linkbacks_excerpt', $text );
 	}
