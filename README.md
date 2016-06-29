@@ -2,8 +2,8 @@
 **Contributors:** pfefferle  
 **Donate link:** http://14101978.de  
 **Tags:** webmention, pingback, trackback, linkback, microformats, comments, indieweb  
-**Requires at least:** 4.2  
-**Tested up to:** 4.3  
+**Requires at least:** 4.3  
+**Tested up to:** 4.5.3  
 **Stable tag:** 3.2.0  
 
 Richer Comments and Linkbacks for WordPress!

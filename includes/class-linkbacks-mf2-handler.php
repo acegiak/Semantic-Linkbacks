@@ -5,20 +5,18 @@ if ( ! class_exists( 'Mf2\Parser' ) ) {
 
 use Mf2\Parser;
 
-add_action( 'init', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'init' ) );
-
 /**
  * provides a microformats handler for the semantic linkbacks
  * WordPress plugin
  *
  * @author Matthias Pfefferle
  */
-class SemanticLinkbacksPlugin_MicroformatsHandler {
+class Linkbacks_MF2_Handler {
 	/**
 	 * initialize the plugin, registering WordPess hooks.
 	 */
 	public static function init() {
-		add_filter( 'semantic_linkbacks_commentdata', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'generate_commentdata' ), 1, 4 );
+		add_filter( 'semantic_linkbacks_commentdata', array( 'Linkbacks_MF2_Handler', 'generate_commentdata' ), 1, 4 );
 	}
 
 	/**
