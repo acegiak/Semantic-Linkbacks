@@ -166,19 +166,18 @@ class Linkbacks_Handler {
 	public static function get_comment_type_excerpts() {
 		$strings = array(
 			// special case. any value that evals to false will be considered standard
-			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>',	'semantic_linkbacks' ),
-
-			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>',	'semantic_linkbacks' ),
-			'repost'		=> __( '%1$s reposted %2$s on <a href="%3$s">%4$s</a>',		'semantic_linkbacks' ),
-			'like'			=> __( '%1$s liked %2$s on <a href="%3$s">%4$s</a>',		'semantic_linkbacks' ),
-			'favorite'		=> __( '%1$s favorited %2$s on <a href="%3$s">%4$s</a>',	'semantic_linkbacks' ),
-			'tag'			=> __( '%1$s tagged %2$s on <a href="%3$s">%4$s</a>',		'semantic_linkbacks' ),
-			'bookmark'		=> __( '%1$s bookmarked %2$s on <a href="%3$s">%4$s</a>',	'semantic_linkbacks' ),
-			'rsvp:yes'		=> __( '%1$s is <strong>attending</strong>',				'semantic_linkbacks' ),
-			'rsvp:no'		=> __( '%1$s is <strong>not attending</strong>',			'semantic_linkbacks' ),
-			'rsvp:maybe'	=> __( 'Maybe %1$s will be <strong>attending</strong>',		'semantic_linkbacks' ),
-			'rsvp:invited'	=> __( '%1$s is <strong>invited</strong>',					'semantic_linkbacks' ),
-			'rsvp:tracking'	=> __( '%1$s <strong>tracks</strong> this event',			'semantic_linkbacks' ),
+			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+			'repost'		=> __( '%1$s reposted %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+			'like'			=> __( '%1$s liked %2$s on <a href="%3$s">%4$s</a>.',		'semantic_linkbacks' ),
+			'favorite'		=> __( '%1$s favorited %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+			'tag'			=> __( '%1$s tagged %2$s on <a href="%3$s">%4$s</a>.',		'semantic_linkbacks' ),
+			'bookmark'		=> __( '%1$s bookmarked %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+			'rsvp:yes'		=> __( '%1$s is <strong>attending</strong>.',				'semantic_linkbacks' ),
+			'rsvp:no'		=> __( '%1$s is <strong>not attending</strong>.',			'semantic_linkbacks' ),
+			'rsvp:maybe'	=> __( 'Maybe %1$s will be <strong>attending</strong>.',	'semantic_linkbacks' ),
+			'rsvp:invited'	=> __( '%1$s is <strong>invited</strong>.',					'semantic_linkbacks' ),
+			'rsvp:tracking'	=> __( '%1$s <strong>tracks</strong> this event.',			'semantic_linkbacks' ),
 		);
 
 		return $strings;
