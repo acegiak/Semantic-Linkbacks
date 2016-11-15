@@ -57,23 +57,23 @@ class Linkbacks_Handler {
 	/**
 	 * Nicer semantic linkbacks
 	 *
-	 * @param int $comment_ID the comment id
+	 * @param int $comment_id the comment id
 	 */
-	public static function linkback_fix( $comment_ID ) {
+	public static function linkback_fix( $comment_id ) {
 		// return if comment_ID is empty
-		if ( ! $comment_ID ) {
-			return $comment_ID;
+		if ( ! $comment_id ) {
+			return $comment_id;
 		}
 
 		// check if it is a valid comment
-		$commentdata = get_comment( $comment_ID, ARRAY_A );
+		$commentdata = get_comment( $comment_id, ARRAY_A );
 
 		// check if there is any comment-data
 		if ( ! $commentdata ) {
-			return $comment_ID;
+			return $comment_id;
 		}
 		if ( '' == $commentdata['comment_type'] ) {
-			return $comment_ID;
+			return $comment_id;
 		}
 		// source
 		$source = esc_url_raw( $commentdata['comment_author_url'] );
@@ -82,13 +82,13 @@ class Linkbacks_Handler {
 		if ( $comments = get_comments( array( 'meta_key' => 'semantic_linkbacks_source', 'meta_value' => htmlentities( $source ) ) ) ) {
 			$comment = $comments[0];
 
-			if ( $comment_ID != $comment->comment_ID ) {
+			if ( $comment_id != $comment->comment_ID ) {
 				wp_delete_comment( $commentdata['comment_ID'], true );
 
 				$commentdata['comment_ID'] = $comment->comment_ID;
 				$commentdata['comment_approved'] = $comment->comment_approved;
 			} else {
-				$commentdata['comment_ID'] = $comment_ID;
+				$commentdata['comment_ID'] = $comment_id;
 			}
 		}
 
@@ -96,7 +96,7 @@ class Linkbacks_Handler {
 		$post = get_post( $commentdata['comment_post_ID'], ARRAY_A );
 
 		if ( ! $post ) {
-			return $comment_ID;
+			return $comment_id;
 		}
 
 		// generate target
@@ -112,7 +112,7 @@ class Linkbacks_Handler {
 
 		// handle errors
 		if ( is_wp_error( $response ) ) {
-			return $comment_ID;
+			return $comment_id;
 		}
 
 		// get HTML code of source url
@@ -126,7 +126,7 @@ class Linkbacks_Handler {
 
 		// check if comment-data is empty
 		if ( empty( $commentdata ) ) {
-			return $comment_ID;
+			return $comment_id;
 		}
 
 		// remove "webmention" comment-type if $type is "reply"
@@ -141,21 +141,21 @@ class Linkbacks_Handler {
 		// save custom comment properties as comment-metas
 		foreach ( $commentdata as $key => $value ) {
 			if ( 0 === strpos( $key, '_' ) ) {
-				update_comment_meta( $commentdata['comment_ID'], 'semantic_linkbacks'.$key, $value, true );
+				update_comment_meta( $commentdata['comment_ID'], 'semantic_linkbacks' . $key, $value, true );
 				unset( $commentdata[ $key ] );
 			}
 		}
 
 		// disable flood control
-		remove_filter( 'check_comment_flood', 'check_comment_flood_db', 10, 3 );
+		remove_action( 'check_comment_flood', 'check_comment_flood_db', 10, 4 );
 
 		// update comment
 		wp_update_comment( $commentdata );
 
 		// re-add flood control
-		add_filter( 'check_comment_flood', 'check_comment_flood_db', 10, 3 );
+		add_action( 'check_comment_flood', 'check_comment_flood_db', 10, 4 );
 
-		return $comment_ID;
+		return $comment_id;
 	}
 
 	/**
@@ -363,7 +363,7 @@ class Linkbacks_Handler {
 	 * @param int|string|object $id_or_email A user ID, email address, or comment object
 	 * @return array $args
 	 */
-	public static function pre_get_avatar_data($args, $id_or_email) {
+	public static function pre_get_avatar_data( $args, $id_or_email ) {
 		if ( ! isset( $args['class'] ) ) {
 			$args['class'] = array( 'u-photo' );
 		} else {
@@ -411,7 +411,7 @@ class Linkbacks_Handler {
 	 * @param string $link the author url
 	 * @return string the replaced/parsed author url or the original comment link
 	 */
-	public static function get_comment_author_url($link) {
+	public static function get_comment_author_url( $link ) {
 		global $comment;
 
 		if ( is_object( $comment ) && $author_url = get_comment_meta( $comment->comment_ID, 'semantic_linkbacks_author_url', true ) ) {

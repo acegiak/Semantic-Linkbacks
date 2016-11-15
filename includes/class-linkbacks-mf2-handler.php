@@ -189,7 +189,7 @@ class Linkbacks_MF2_Handler {
 
 		// check rsvp property
 		if ( self::check_mf_attr( 'rsvp', $properties ) ) {
-			$commentdata['_type'] = wp_slash( 'rsvp:'.$properties['rsvp'][0] );
+			$commentdata['_type'] = wp_slash( 'rsvp:' . $properties['rsvp'][0] );
 		} else {
 			// get post type
 			$commentdata['_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
@@ -389,7 +389,7 @@ class Linkbacks_MF2_Handler {
 	 *
 	 * @return boolean
 	 */
-	public static function check_mf_attr($key, $node) {
+	public static function check_mf_attr( $key, $node ) {
 		if ( isset( $node[ $key ] ) && isset( $node[ $key ][0] ) ) {
 			return true;
 		}
