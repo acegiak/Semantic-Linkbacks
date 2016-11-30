@@ -167,6 +167,7 @@ class Linkbacks_Handler {
 		$strings = array(
 			// special case. any value that evals to false will be considered standard
 			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+
 			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
 			'repost'		=> __( '%1$s reposted %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
 			'like'			=> __( '%1$s liked %2$s on <a href="%3$s">%4$s</a>.',		'semantic_linkbacks' ),
