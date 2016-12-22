@@ -5,7 +5,7 @@
  * Description: Semantic Linkbacks for WebMentions, Trackbacks and Pingbacks
  * Author: pfefferle
  * Author URI: http://notizblog.org/
- * Version: 3.2.1
+ * Version: 3.3.0
  * Text Domain: semantic_linkbacks
  */
 
@@ -51,7 +51,7 @@ class Semantic_Linkbacks_Plugin {
 	 */
 	public static function plugin_textdomain() {
 		// Note to self, the third argument must not be hardcoded, to account for relocated folders.
-		load_plugin_textdomain( 'semantic_linkbacks', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+		load_plugin_textdomain( 'semantic-linkbacks', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 	}
 
 }

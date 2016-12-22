@@ -166,19 +166,19 @@ class Linkbacks_Handler {
 	public static function get_comment_type_excerpts() {
 		$strings = array(
 			// special case. any value that evals to false will be considered standard
-			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
 
-			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'repost'		=> __( '%1$s reposted %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'like'			=> __( '%1$s liked %2$s on <a href="%3$s">%4$s</a>.',		'semantic_linkbacks' ),
-			'favorite'		=> __( '%1$s favorited %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'tag'			=> __( '%1$s tagged %2$s on <a href="%3$s">%4$s</a>.',		'semantic_linkbacks' ),
-			'bookmark'		=> __( '%1$s bookmarked %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'rsvp:yes'		=> __( '%1$s is <strong>attending</strong>.',				'semantic_linkbacks' ),
-			'rsvp:no'		=> __( '%1$s is <strong>not attending</strong>.',			'semantic_linkbacks' ),
-			'rsvp:maybe'	=> __( 'Maybe %1$s will be <strong>attending</strong>.',	'semantic_linkbacks' ),
-			'rsvp:invited'	=> __( '%1$s is <strong>invited</strong>.',					'semantic_linkbacks' ),
-			'rsvp:tracking'	=> __( '%1$s <strong>tracks</strong> this event.',			'semantic_linkbacks' ),
+			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'repost'		=> __( '%1$s reposted %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'like'			=> __( '%1$s liked %2$s on <a href="%3$s">%4$s</a>.',		'semantic-linkbacks' ),
+			'favorite'		=> __( '%1$s favorited %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'tag'			=> __( '%1$s tagged %2$s on <a href="%3$s">%4$s</a>.',		'semantic-linkbacks' ),
+			'bookmark'		=> __( '%1$s bookmarked %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'rsvp:yes'		=> __( '%1$s is <strong>attending</strong>.',				'semantic-linkbacks' ),
+			'rsvp:no'		=> __( '%1$s is <strong>not attending</strong>.',			'semantic-linkbacks' ),
+			'rsvp:maybe'	=> __( 'Maybe %1$s will be <strong>attending</strong>.',	'semantic-linkbacks' ),
+			'rsvp:invited'	=> __( '%1$s is <strong>invited</strong>.',					'semantic-linkbacks' ),
+			'rsvp:tracking'	=> __( '%1$s <strong>tracks</strong> this event.',			'semantic-linkbacks' ),
 		);
 
 		return $strings;
@@ -192,19 +192,19 @@ class Linkbacks_Handler {
 	public static function get_comment_type_strings() {
 		$strings = array(
 			// Special case. any value that evals to false will be considered standard
-			'mention'		=> __( 'Mention',	'semantic_linkbacks' ),
+			'mention'		=> __( 'Mention',	'semantic-linkbacks' ),
 
-			'reply'			=> __( 'Reply',		'semantic_linkbacks' ),
-			'repost'		=> __( 'Repost',	'semantic_linkbacks' ),
-			'like'			=> __( 'Like',		'semantic_linkbacks' ),
-			'favorite'		=> __( 'Favorite',	'semantic_linkbacks' ),
-			'tag'			=> __( 'Tag',		'semantic_linkbacks' ),
-			'bookmark'		=> __( 'Bookmark',	'semantic_linkbacks' ),
-			'rsvp:yes'		=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:no'		=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:invited'	=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:maybe'	=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:tracking'	=> __( 'RSVP',		'semantic_linkbacks' ),
+			'reply'			=> __( 'Reply',		'semantic-linkbacks' ),
+			'repost'		=> __( 'Repost',	'semantic-linkbacks' ),
+			'like'			=> __( 'Like',		'semantic-linkbacks' ),
+			'favorite'		=> __( 'Favorite',	'semantic-linkbacks' ),
+			'tag'			=> __( 'Tag',		'semantic-linkbacks' ),
+			'bookmark'		=> __( 'Bookmark',	'semantic-linkbacks' ),
+			'rsvp:yes'		=> __( 'RSVP',		'semantic-inkbacks' ),
+			'rsvp:no'		=> __( 'RSVP',		'semantic-linkbacks' ),
+			'rsvp:invited'	=> __( 'RSVP',		'semantic-linkbacks' ),
+			'rsvp:maybe'	=> __( 'RSVP',		'semantic-linkbacks' ),
+			'rsvp:tracking'	=> __( 'RSVP',		'semantic-linkbacks' ),
 		);
 
 		return $strings;
@@ -218,17 +218,17 @@ class Linkbacks_Handler {
 	public static function get_post_format_strings() {
 		$strings = array(
 			// Special case. any value that evals to false will be considered standard
-			'standard'	=> __( 'this Article',	'semantic_linkbacks' ),
+			'standard'	=> __( 'this Article',	'semantic-linkbacks' ),
 
-			'aside'		=> __( 'this Aside',	'semantic_linkbacks' ),
-			'chat'		=> __( 'this Chat',		'semantic_linkbacks' ),
-			'gallery'	=> __( 'this Gallery',	'semantic_linkbacks' ),
-			'link'		=> __( 'this Link',		'semantic_linkbacks' ),
-			'image'		=> __( 'this Image',	'semantic_linkbacks' ),
-			'quote'		=> __( 'this Quote',	'semantic_linkbacks' ),
-			'status'	=> __( 'this Status',	'semantic_linkbacks' ),
-			'video'		=> __( 'this Video',	'semantic_linkbacks' ),
-			'audio'		=> __( 'this Audio',	'semantic_linkbacks' ),
+			'aside'		=> __( 'this Aside',	'semantic-linkbacks' ),
+			'chat'		=> __( 'this Chat',		'semantic-linkbacks' ),
+			'gallery'	=> __( 'this Gallery',		'semantic-linkbacks' ),
+			'link'		=> __( 'this Link',		'semantic-linkbacks' ),
+			'image'		=> __( 'this Image',	'semantic-linkbacks' ),
+			'quote'		=> __( 'this Quote',	'semantic-linkbacks' ),
+			'status'	=> __( 'this Status',	'semantic-linkbacks' ),
+			'video'		=> __( 'this Video',	'semantic-linkbacks' ),
+			'audio'		=> __( 'this Audio',	'semantic-linkbacks' ),
 		);
 
 		return $strings;
