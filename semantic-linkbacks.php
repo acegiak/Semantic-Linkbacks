@@ -6,6 +6,8 @@
  * Author: pfefferle
  * Author URI: http://notizblog.org/
  * Version: 3.3.0
+ * License: MIT
+ * License URI: http://opensource.org/licenses/MIT
  * Text Domain: semantic-linkbacks
  */
 
