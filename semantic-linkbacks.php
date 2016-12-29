@@ -39,9 +39,16 @@ class Semantic_Linkbacks_Plugin {
 
 		// run plugin only if php version is >= 5.3
 		if ( version_compare( phpversion(), 5.3, '>=' ) ) {
-			require_once 'includes/class-linkbacks-mf2-handler.php';
+			require_once( dirname( __FILE__ ) . '/includes/class-linkbacks-mf2-handler.php' );
 			add_action( 'init', array( 'Linkbacks_MF2_Handler', 'init' ) );
 		}
+
+		if ( version_compare( get_bloginfo( 'version' ), '4.7.1', '<' ) ) {
+			require_once( dirname( __FILE__ ) . '/includes/compatibility.php' );
+		}
+
+		remove_filter( 'webmention_comment_data', array( 'Webmention_Receiver', 'default_title_filter' ), 21 );
+		remove_filter( 'webmention_comment_data', array( 'Webmention_Receiver', 'default_content_filter' ), 22 );
 
 		self::plugin_textdomain();
 	}
@@ -53,5 +60,4 @@ class Semantic_Linkbacks_Plugin {
 		// Note to self, the third argument must not be hardcoded, to account for relocated folders.
 		load_plugin_textdomain( 'semantic-linkbacks', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 	}
-
 }
