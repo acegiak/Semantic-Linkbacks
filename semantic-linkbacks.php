@@ -6,7 +6,7 @@
  * Author: pfefferle
  * Author URI: http://notizblog.org/
  * Version: 3.3.0
- * Text Domain: semantic_linkbacks
+ * Text Domain: semantic-linkbacks
  */
 
 // check if php version is >= 5.3
