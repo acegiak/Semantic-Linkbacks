@@ -13,13 +13,12 @@ class Linkbacks_Handler {
 	 * Initialize the plugin, registering WordPress hooks.
 	 */
 	public static function init() {
-		// hook into linkback functions to add more semantics
-		// FIXME temporarily removed because it does not support updates
-		// add_action( 'comment_post', array( 'Linkbacks_Handler', 'linkback_fix' ), 9 );
-		add_action( 'pingback_post', array( 'Linkbacks_Handler', 'linkback_fix' ), 9 );
-		// FIXME temporarily added because the `comment_post` does not support updates
-		add_action( 'trackback_post', array( 'Linkbacks_Handler', 'linkback_fix' ), 9 );
-		add_action( 'webmention_post', array( 'Linkbacks_Handler', 'linkback_fix' ), 9 );
+		// enhance linkbacks
+		add_filter( 'preprocess_comment', array( 'Linkbacks_Handler', 'enhance' ), 0, 1 );
+		add_filter( 'wp_update_comment_data', array( 'Linkbacks_Handler', 'enhance' ), 11, 3 );
+
+		// Updates Comment Meta if set in commentdata
+		add_action( 'edit_comment', array( 'Linkbacks_Handler', 'update_meta' ), 10, 2 );
 
 		add_filter( 'pre_get_avatar_data', array( 'Linkbacks_Handler', 'pre_get_avatar_data' ), 11, 5 );
 		// To extend or to override the default behavior, just use the `comment_text` filter with a lower
@@ -33,8 +32,98 @@ class Linkbacks_Handler {
 		add_filter( 'get_comment_author_url', array( 'Linkbacks_Handler', 'get_comment_author_url' ), 99, 3 );
 		add_filter( 'get_avatar_comment_types', array( 'Linkbacks_Handler', 'get_avatar_comment_types' ) );
 		add_filter( 'comment_class', array( 'Linkbacks_Handler', 'comment_class' ), 10, 4 );
+
+		// Register Meta Keys
+		self::register_meta();
 	}
 
+	/**
+	 * This is more to lay out the data structure than anything else.
+	 */
+	public static function register_meta() {
+		$args = array(
+			'sanitize_callback' => 'esc_url_raw',
+			'type' => 'string',
+			'description' => 'Author URL',
+			'single' => true,
+			'show_in_rest' => true,
+		);
+		register_meta( 'comment', 'semantic_linkbacks_author_url', $args );
+
+		$args = array(
+			'sanitize_callback' => 'esc_url_raw',
+			'type' => 'string',
+			'description' => 'Avatar URL',
+			'single' => true,
+			'show_in_rest' => true,
+		);
+		register_meta( 'comment', 'semantic_linkbacks_avatar', $args );
+
+		$args = array(
+			'sanitize_callback' => 'esc_url_raw',
+			'type' => 'string',
+			'description' => 'Canonical URL',
+			'single' => true,
+			'show_in_rest' => true,
+		);
+		register_meta( 'comment', 'semantic_linkbacks_canonical', $args );
+
+		$args = array(
+			'type' => 'string',
+			'description' => 'Linkbacks Type',
+			'single' => true,
+			'show_in_rest' => true,
+		);
+		register_meta( 'comment', 'semantic_linkbacks_type', $args );
+	}
+
+	/**
+	 * Update an Enhanced Comment
+	 */
+	public static function enhance( $commentdata, $comment = array(), $commentarr = array() ) {
+		if ( ! empty( $commentarr ) ) {
+			// add pre-processed data from, for example the Webmention plugin
+			$commentdata = array_merge( $commentdata, $commentarr );
+		}
+
+		// check if comment is a linkback
+		if ( ! in_array( $commentdata['comment_type'], array( 'webmention', 'pingback', 'trackback' ) ) ) {
+			return $commentdata;
+		}
+
+		// only run the enhancer if `remote_source_original` is set
+		if ( empty( $commentdata['remote_source_original'] ) ) {
+			return $commentdata;
+		}
+
+		// initialize comment_meta array
+		if ( ! array_key_exists( 'comment_meta', $commentdata ) ) {
+			$commentdata['comment_meta'] = array();
+		}
+
+		// generate target
+		$target = get_permalink( $commentdata['comment_post_ID'] );
+
+		// add replytocom if present
+		if ( isset( $commentdata['comment_parent'] ) && ! empty( $commentdata['comment_parent'] ) ) {
+			$target = add_query_arg( array( 'replytocom' => $commentdata['comment_parent'] ), $target );
+		}
+
+		// add source url as comment-meta
+		$commentdata['comment_meta']['semantic_linkbacks_source'] = esc_url_raw( $commentdata['comment_author_url'] );
+
+		// adds a hook to enable some other semantic handlers for example schema.org
+		$commentdata = apply_filters( 'semantic_linkbacks_commentdata', $commentdata, $target );
+
+		// remove "webmention" comment-type if $type is "reply"
+		if ( isset( $commentdata['comment_meta']['semantic_linkbacks_type'] ) ) {
+			if ( in_array( $commentdata['comment_meta']['semantic_linkbacks_type'], apply_filters( 'semantic_linkbacks_comment_types', array( 'reply' ) ) ) ) {
+				$commentdata['comment_type'] = '';
+			}
+		}
+
+		return wp_unslash( $commentdata );
+	}
 
 	/**
 	 * Retrieve Remote Source
@@ -49,113 +138,25 @@ class Linkbacks_Handler {
 			'timeout' => 100,
 			'limit_response_size' => 1048576,
 			'redirection' => 20,
-			'user-agent' => "$user_agent; verifying linkback from $remote_ip",
+			'user-agent' => "$user_agent; verifying linkback",
 		);
-		return wp_remote_get( $url, $args );
+		return wp_safe_remote_get( $url, $args );
 	}
 
 	/**
-	 * Nicer semantic linkbacks
+	 * Save Meta - to Match the core functionality in wp_insert_comment.
+	 * To be Removed if This Functionality Hits Core.
 	 *
-	 * @param int $comment_id the comment id
+	 * @param array $commentdata The new comment data
+	 * @param array $comment The old comment data
 	 */
-	public static function linkback_fix( $comment_id ) {
-		// return if comment_ID is empty
-		if ( ! $comment_id ) {
-			return $comment_id;
-		}
-
-		// check if it is a valid comment
-		$commentdata = get_comment( $comment_id, ARRAY_A );
-
-		// check if there is any comment-data
-		if ( ! $commentdata ) {
-			return $comment_id;
-		}
-		if ( '' == $commentdata['comment_type'] ) {
-			return $comment_id;
-		}
-		// source
-		$source = esc_url_raw( $commentdata['comment_author_url'] );
-
-		// check if there is already a matching comment
-		if ( $comments = get_comments( array( 'meta_key' => 'semantic_linkbacks_source', 'meta_value' => htmlentities( $source ) ) ) ) {
-			$comment = $comments[0];
-
-			if ( $comment_id != $comment->comment_ID ) {
-				wp_delete_comment( $commentdata['comment_ID'], true );
-
-				$commentdata['comment_ID'] = $comment->comment_ID;
-				$commentdata['comment_approved'] = $comment->comment_approved;
-			} else {
-				$commentdata['comment_ID'] = $comment_id;
+	public static function update_meta( $comment_id, $commentdata ) {
+		// If metadata is provided, store it.
+		if ( isset( $commentdata['comment_meta'] ) && is_array( $commentdata['comment_meta'] ) ) {
+			foreach ( $commentdata['comment_meta'] as $meta_key => $meta_value ) {
+				update_comment_meta( $comment_id, $meta_key, $meta_value, true );
 			}
 		}
-
-		// check if post exists
-		$post = get_post( $commentdata['comment_post_ID'], ARRAY_A );
-
-		if ( ! $post ) {
-			return $comment_id;
-		}
-
-		// generate target
-		$target = get_permalink( $post['ID'] );
-
-		// add replytocom if present
-		if ( isset( $commentdata['comment_parent'] ) && ! empty( $commentdata['comment_parent'] ) ) {
-			$target = add_query_arg( array( 'replytocom' => $commentdata['comment_parent'] ), $target );
-		}
-
-		// get remote html
-		$response = self::retrieve( esc_url_raw( html_entity_decode( $source ) ) );
-
-		// handle errors
-		if ( is_wp_error( $response ) ) {
-			return $comment_id;
-		}
-
-		// get HTML code of source url
-		$html = wp_remote_retrieve_body( $response );
-
-		// add source url as comment-meta
-		update_comment_meta( $commentdata['comment_ID'], 'semantic_linkbacks_source', esc_url_raw( $commentdata['comment_author_url'] ), true );
-
-		// adds a hook to enable semantic handlers including microformats or for example schema.org
-		$commentdata = apply_filters( 'semantic_linkbacks_commentdata', $commentdata, $target, $html );
-
-		// check if comment-data is empty
-		if ( empty( $commentdata ) ) {
-			return $comment_id;
-		}
-
-		// remove "webmention" comment-type if $type is "reply"
-		if ( isset( $commentdata['_type'] ) &&
-			in_array( $commentdata['_type'], apply_filters( 'semantic_linkbacks_comment_types', array( 'reply' ) ) ) ) {
-			global $wpdb;
-			$wpdb->update( $wpdb->comments, array( 'comment_type' => '' ), array( 'comment_ID' => $commentdata['comment_ID'] ) );
-
-			$commentdata['comment_type'] = '';
-		}
-
-		// save custom comment properties as comment-metas
-		foreach ( $commentdata as $key => $value ) {
-			if ( 0 === strpos( $key, '_' ) ) {
-				update_comment_meta( $commentdata['comment_ID'], 'semantic_linkbacks' . $key, $value, true );
-				unset( $commentdata[ $key ] );
-			}
-		}
-
-		// disable flood control
-		remove_action( 'check_comment_flood', 'check_comment_flood_db', 10, 4 );
-
-		// update comment
-		wp_update_comment( $commentdata );
-
-		// re-add flood control
-		add_action( 'check_comment_flood', 'check_comment_flood_db', 10, 4 );
-
-		return $comment_id;
 	}
 
 	/**
@@ -166,19 +167,19 @@ class Linkbacks_Handler {
 	public static function get_comment_type_excerpts() {
 		$strings = array(
 			// special case. any value that evals to false will be considered standard
-			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
+			'mention'		=> __( '%1$s mentioned %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
 
-			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'repost'		=> __( '%1$s reposted %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'like'			=> __( '%1$s liked %2$s on <a href="%3$s">%4$s</a>.',		'semantic_linkbacks' ),
-			'favorite'		=> __( '%1$s favorited %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'tag'			=> __( '%1$s tagged %2$s on <a href="%3$s">%4$s</a>.',		'semantic_linkbacks' ),
-			'bookmark'		=> __( '%1$s bookmarked %2$s on <a href="%3$s">%4$s</a>.',	'semantic_linkbacks' ),
-			'rsvp:yes'		=> __( '%1$s is <strong>attending</strong>.',				'semantic_linkbacks' ),
-			'rsvp:no'		=> __( '%1$s is <strong>not attending</strong>.',			'semantic_linkbacks' ),
-			'rsvp:maybe'	=> __( 'Maybe %1$s will be <strong>attending</strong>.',	'semantic_linkbacks' ),
-			'rsvp:invited'	=> __( '%1$s is <strong>invited</strong>.',					'semantic_linkbacks' ),
-			'rsvp:tracking'	=> __( '%1$s <strong>tracks</strong> this event.',			'semantic_linkbacks' ),
+			'reply'			=> __( '%1$s replied to %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'repost'		=> __( '%1$s reposted %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'like'			=> __( '%1$s liked %2$s on <a href="%3$s">%4$s</a>.',		'semantic-linkbacks' ),
+			'favorite'		=> __( '%1$s favorited %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'tag'			=> __( '%1$s tagged %2$s on <a href="%3$s">%4$s</a>.',		'semantic-linkbacks' ),
+			'bookmark'		=> __( '%1$s bookmarked %2$s on <a href="%3$s">%4$s</a>.',	'semantic-linkbacks' ),
+			'rsvp:yes'		=> __( '%1$s is <strong>attending</strong>.',				'semantic-linkbacks' ),
+			'rsvp:no'		=> __( '%1$s is <strong>not attending</strong>.',			'semantic-linkbacks' ),
+			'rsvp:maybe'	=> __( 'Maybe %1$s will be <strong>attending</strong>.',	'semantic-linkbacks' ),
+			'rsvp:invited'	=> __( '%1$s is <strong>invited</strong>.',					'semantic-linkbacks' ),
+			'rsvp:tracking'	=> __( '%1$s <strong>tracks</strong> this event.',			'semantic-linkbacks' ),
 		);
 
 		return $strings;
@@ -192,19 +193,19 @@ class Linkbacks_Handler {
 	public static function get_comment_type_strings() {
 		$strings = array(
 			// Special case. any value that evals to false will be considered standard
-			'mention'		=> __( 'Mention',	'semantic_linkbacks' ),
+			'mention'		=> __( 'Mention',	'semantic-linkbacks' ),
 
-			'reply'			=> __( 'Reply',		'semantic_linkbacks' ),
-			'repost'		=> __( 'Repost',	'semantic_linkbacks' ),
-			'like'			=> __( 'Like',		'semantic_linkbacks' ),
-			'favorite'		=> __( 'Favorite',	'semantic_linkbacks' ),
-			'tag'			=> __( 'Tag',		'semantic_linkbacks' ),
-			'bookmark'		=> __( 'Bookmark',	'semantic_linkbacks' ),
-			'rsvp:yes'		=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:no'		=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:invited'	=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:maybe'	=> __( 'RSVP',		'semantic_linkbacks' ),
-			'rsvp:tracking'	=> __( 'RSVP',		'semantic_linkbacks' ),
+			'reply'			=> __( 'Reply',		'semantic-linkbacks' ),
+			'repost'		=> __( 'Repost',	'semantic-linkbacks' ),
+			'like'			=> __( 'Like',		'semantic-linkbacks' ),
+			'favorite'		=> __( 'Favorite',	'semantic-linkbacks' ),
+			'tag'			=> __( 'Tag',		'semantic-linkbacks' ),
+			'bookmark'		=> __( 'Bookmark',	'semantic-linkbacks' ),
+			'rsvp:yes'		=> __( 'RSVP',		'semantic-linkbacks' ),
+			'rsvp:no'		=> __( 'RSVP',		'semantic-linkbacks' ),
+			'rsvp:invited'	=> __( 'RSVP',		'semantic-linkbacks' ),
+			'rsvp:maybe'	=> __( 'RSVP',		'semantic-linkbacks' ),
+			'rsvp:tracking'	=> __( 'RSVP',		'semantic-linkbacks' ),
 		);
 
 		return $strings;
@@ -218,17 +219,17 @@ class Linkbacks_Handler {
 	public static function get_post_format_strings() {
 		$strings = array(
 			// Special case. any value that evals to false will be considered standard
-			'standard'	=> __( 'this Article',	'semantic_linkbacks' ),
+			'standard'	=> __( 'this Article',	'semantic-linkbacks' ),
 
-			'aside'		=> __( 'this Aside',	'semantic_linkbacks' ),
-			'chat'		=> __( 'this Chat',		'semantic_linkbacks' ),
-			'gallery'	=> __( 'this Gallery',	'semantic_linkbacks' ),
-			'link'		=> __( 'this Link',		'semantic_linkbacks' ),
-			'image'		=> __( 'this Image',	'semantic_linkbacks' ),
-			'quote'		=> __( 'this Quote',	'semantic_linkbacks' ),
-			'status'	=> __( 'this Status',	'semantic_linkbacks' ),
-			'video'		=> __( 'this Video',	'semantic_linkbacks' ),
-			'audio'		=> __( 'this Audio',	'semantic_linkbacks' ),
+			'aside'		=> __( 'this Aside',	'semantic-linkbacks' ),
+			'chat'		=> __( 'this Chat',		'semantic-linkbacks' ),
+			'gallery'	=> __( 'this Gallery',	'semantic-linkbacks' ),
+			'link'		=> __( 'this Link',		'semantic-linkbacks' ),
+			'image'		=> __( 'this Image',	'semantic-linkbacks' ),
+			'quote'		=> __( 'this Quote',	'semantic-linkbacks' ),
+			'status'	=> __( 'this Status',	'semantic-linkbacks' ),
+			'video'		=> __( 'this Video',	'semantic-linkbacks' ),
+			'audio'		=> __( 'this Audio',	'semantic-linkbacks' ),
 		);
 
 		return $strings;
@@ -241,13 +242,13 @@ class Linkbacks_Handler {
 	 * @return string the URL
 	 */
 	public static function get_url( $comment = null ) {
-		// get URL canonical url...
+		// get canonical url...
 		$semantic_linkbacks_canonical = get_comment_meta( $comment->comment_ID, 'semantic_linkbacks_canonical', true );
 		// ...or fall back to source
 		if ( ! $semantic_linkbacks_canonical ) {
 			$semantic_linkbacks_canonical = get_comment_meta( $comment->comment_ID, 'semantic_linkbacks_source', true );
 		}
-		// or fallback to author url
+		// ...or author url
 		if ( ! $semantic_linkbacks_canonical ) {
 			$semantic_linkbacks_canonical = $comment->comment_author_url;
 		}
