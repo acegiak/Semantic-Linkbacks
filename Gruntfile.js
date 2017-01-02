@@ -12,7 +12,7 @@ module.exports = function(grunt) {
       target: {
         options: {
           mainFile: 'semantic-linkbacks.php',
-          potFilename: 'languages/semantic_linkbacks.pot',
+          potFilename: 'languages/semantic-linkbacks.pot',
           type: 'wp-plugin',
           updateTimestamp: true
         }
