@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/pfefferle/wordpress-semantic-linkbacks
  * Description: Semantic Linkbacks for WebMentions, Trackbacks and Pingbacks
  * Author: pfefferle
- * Author URI: http://notizblog.org/
+ * Author URI: http://notiz.blog/
  * Version: 3.3.0
  * License: MIT
  * License URI: http://opensource.org/licenses/MIT
