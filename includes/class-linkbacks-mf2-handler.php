@@ -190,7 +190,7 @@ class Linkbacks_MF2_Handler {
 			$commentdata['comment_meta']['semantic_linkbacks_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
 		}
 
-		scan_for_children($target, $properties)
+		scan_for_children($target, $properties);
 
 		return $commentdata;
 	}
