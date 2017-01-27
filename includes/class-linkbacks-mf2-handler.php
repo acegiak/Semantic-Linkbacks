@@ -5,20 +5,18 @@ if ( ! class_exists( 'Mf2\Parser' ) ) {
 
 use Mf2\Parser;
 
-add_action( 'init', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'init' ) );
-
 /**
  * provides a microformats handler for the semantic linkbacks
  * WordPress plugin
  *
  * @author Matthias Pfefferle
  */
-class SemanticLinkbacksPlugin_MicroformatsHandler {
+class Linkbacks_MF2_Handler {
 	/**
 	 * initialize the plugin, registering WordPess hooks.
 	 */
 	public static function init() {
-		add_filter( 'semantic_linkbacks_commentdata', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'generate_commentdata' ), 1, 4 );
+		add_filter( 'semantic_linkbacks_commentdata', array( 'Linkbacks_MF2_Handler', 'generate_commentdata' ), 1, 3 );
 	}
 
 	/**
@@ -99,18 +97,17 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 *
 	 * @param WP_Comment $commentdata the comment object
 	 * @param string $target the target url
-	 * @param string $html the parsed html
 	 *
 	 * @return array
 	 */
-	public static function generate_commentdata( $commentdata, $target, $html ) {
+	public static function generate_commentdata( $commentdata, $target ) {
 		global $wpdb;
 
 		// add source
 		$source = $commentdata['comment_author_url'];
 
 		// parse source html
-		$parser = new Parser( $html, $source );
+		$parser = new Parser( $commentdata['remote_source_original'], $source );
 		$mf_array = $parser->parse( true );
 
 		// get all 'relevant' entries
@@ -170,27 +167,27 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 			}
 
 			if ( self::check_mf_attr( 'url', $author ) ) {
-				$commentdata['_author_url'] = esc_url_raw( $author['url'][0] );
+				$commentdata['comment_meta']['semantic_linkbacks_author_url'] = esc_url_raw( $author['url'][0] );
 			}
 
 			if ( self::check_mf_attr( 'photo', $author ) ) {
-				$commentdata['_avatar'] = esc_url_raw( $author['photo'][0] );
+				$commentdata['comment_meta']['semantic_linkbacks_avatar'] = esc_url_raw( $author['photo'][0] );
 			}
 		}
 
 		// set canonical url (u-url)
 		if ( self::check_mf_attr( 'url', $properties ) ) {
-			$commentdata['_canonical'] = esc_url_raw( $properties['url'][0] );
+			$commentdata['comment_meta']['semantic_linkbacks_canonical'] = esc_url_raw( $properties['url'][0] );
 		} else {
-			$commentdata['_canonical'] = esc_url_raw( $source );
+			$commentdata['comment_meta']['semantic_linkbacks_canonical'] = esc_url_raw( $source );
 		}
 
 		// check rsvp property
 		if ( self::check_mf_attr( 'rsvp', $properties ) ) {
-			$commentdata['_type'] = wp_slash( 'rsvp:'.$properties['rsvp'][0] );
+			$commentdata['comment_meta']['semantic_linkbacks_type'] = wp_slash( 'rsvp:' . $properties['rsvp'][0] );
 		} else {
 			// get post type
-			$commentdata['_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
+			$commentdata['comment_meta']['semantic_linkbacks_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
 		}
 
 //BEGIN SALMENTION CODE ATTEMPT
@@ -465,7 +462,7 @@ class SemanticLinkbacksPlugin_MicroformatsHandler {
 	 *
 	 * @return boolean
 	 */
-	public static function check_mf_attr($key, $node) {
+	public static function check_mf_attr( $key, $node ) {
 		if ( isset( $node[ $key ] ) && isset( $node[ $key ][0] ) ) {
 			return true;
 		}
