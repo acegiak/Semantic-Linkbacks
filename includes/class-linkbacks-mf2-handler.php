@@ -190,85 +190,90 @@ class Linkbacks_MF2_Handler {
 			$commentdata['comment_meta']['semantic_linkbacks_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
 		}
 
-//BEGIN SALMENTION CODE ATTEMPT
-
-    if (self::check_mf_attr('comment', $properties)) {
-	$postid = url_to_postid( $target );
-	foreach($properties['comment'] as $key=>$c){
-
-		error_log("CHILD MAJOR PARSING:".print_r($c,true));
-		$child = $c['properties'];
-		error_log("CHILD COMMENT PARSING:".print_r($child,true));
-
-		
-		if(self::check_mf_attr('author', $child)){
-			$author = $child['author'][0]['properties'];
-		}else if(self::check_mf_attr('children', $c) && $c['children'][0]['type'][0] == 'h-card'){
-			$author = $c['children'][0]['properties'];
-		}else{
-    			error_log("NO AUTHOR! BREAKING!");
-			break;
-		}
-		
-    		if (!self::check_mf_attr('name', $author)) {error_log("NO AUTHOR NAME! BREAKING!");break;}
-		$authorname = $author['name'][0];
-    		if (!self::check_mf_attr('content', $child)) {error_log("NO CONTENT! BREAKING!");break;}
-		$content = wp_filter_kses($child['content'][0]['html']);
-		$type = wp_slash(self::get_entry_type($target, $c, $mf_array));
-		$childdata = array(
-			'comment_post_ID' => $postid, // to which post the comment will show up
-			'comment_author' => $authorname, //fixed value - can be dynamic 
-			'comment_content' => $content, //fixed value - can be dynamic 
-			'comment_type' => "", //empty for regular comments, 'pingback' for pingbacks, 'trackback' for trackbacks
-			'comment_parent' => 0, //0 if it's not a reply to another comment; if it's a reply, mention the parent comment ID here
-			'user_id' => $current_user->ID, //passing current user ID or any predefined as per the demand
-		);
-		if (self::check_mf_attr('url', $child)) {
-			$args = array(
-				'post_id' => $postid
-			);
-			$foundcomments = get_comments($args);
-
-			$updatedcomments = 0;
-			if(!empty($foundcomments)){
-				$foundcomment = get_comment( $foundcomments[0]->comment_ID, ARRAY_A );
-				$canonical = get_comment_meta( $foundcomments[0]->comment_ID,'semantic_linkbacks_canonical', true );
-				error_log("CANONICAL:".print_r($canonical,true)." vs CHILD URL:".print_r($child['url'][0],true));
-				if($canonical == $child['url'][0]){
-					foreach($childdata as $ck=>$cv){
-						$foundcomment[$ck]=$cv;
-					}	
-	
-					$foundcomment['comment_approved'] = 0;
-					wp_update_comment( $foundcomment );
-					$updatedcomments++;
-				}
-			}
-			if($updatedcomments <= 0){
-				$childdata['comment_author_url'] = $child['url'][0];
-				$childdata['comment_approved'] = 0;
-				$comment_id = wp_new_comment( $childdata );
-			}
-			
-		}else{
-			//Insert new comment and get the comment ID
-			$childdata['comment_approved'] = 0;
-			$childdata['comment_author_url'] = $child['url'][0];
-			$comment_id = wp_new_comment( $childdata );
-			
-		}
-		if(isset($comment_id) && self::check_mf_attr('photo', $author)){
-			update_comment_meta( $comment_id, 'semantic_linkbacks_avatar', $author['photo'][0] );
-			update_comment_meta( $comment_id, 'semantic_linkbacks_canonical', $child['url'][0] );
-			update_comment_meta( $comment_id, 'semantic_linkbacks_type', $type );
-			unset ($comment_id);
-		}
-		//error_log("CHILD COMMENT ENTERING:".print_r($childdata,true));
-	}
-    }
-
+		scan_for_children($target, $properties)
 
 		return $commentdata;
+	}
+
+	public static function scan_for_children($target, $properties){
+
+		//BEGIN SALMENTION CODE ATTEMPT
+
+	    if (self::check_mf_attr('comment', $properties)) {
+			$postid = url_to_postid( $target );
+			foreach($properties['comment'] as $key=>$c){
+
+				error_log("CHILD MAJOR PARSING:".print_r($c,true));
+				$child = $c['properties'];
+				error_log("CHILD COMMENT PARSING:".print_r($child,true));
+
+				
+				if(self::check_mf_attr('author', $child)){
+					$author = $child['author'][0]['properties'];
+				}else if(self::check_mf_attr('children', $c) && $c['children'][0]['type'][0] == 'h-card'){
+					$author = $c['children'][0]['properties'];
+				}else{
+		    			error_log("NO AUTHOR! BREAKING!");
+					break;
+				}
+				
+		    		if (!self::check_mf_attr('name', $author)) {error_log("NO AUTHOR NAME! BREAKING!");break;}
+				$authorname = $author['name'][0];
+		    		if (!self::check_mf_attr('content', $child)) {error_log("NO CONTENT! BREAKING!");break;}
+				$content = wp_filter_kses($child['content'][0]['html']);
+				$type = wp_slash(self::get_entry_type($target, $c, $mf_array));
+				$childdata = array(
+					'comment_post_ID' => $postid, // to which post the comment will show up
+					'comment_author' => $authorname, //fixed value - can be dynamic 
+					'comment_content' => $content, //fixed value - can be dynamic 
+					'comment_type' => "", //empty for regular comments, 'pingback' for pingbacks, 'trackback' for trackbacks
+					'comment_parent' => 0, //0 if it's not a reply to another comment; if it's a reply, mention the parent comment ID here
+					'user_id' => $current_user->ID, //passing current user ID or any predefined as per the demand
+				);
+				if (self::check_mf_attr('url', $child)) {
+					$args = array(
+						'post_id' => $postid
+					);
+					$foundcomments = get_comments($args);
+
+					$updatedcomments = 0;
+					if(!empty($foundcomments)){
+						$foundcomment = get_comment( $foundcomments[0]->comment_ID, ARRAY_A );
+						$canonical = get_comment_meta( $foundcomments[0]->comment_ID,'semantic_linkbacks_canonical', true );
+						error_log("CANONICAL:".print_r($canonical,true)." vs CHILD URL:".print_r($child['url'][0],true));
+						if($canonical == $child['url'][0]){
+							foreach($childdata as $ck=>$cv){
+								$foundcomment[$ck]=$cv;
+							}	
+			
+							$foundcomment['comment_approved'] = 0;
+							wp_update_comment( $foundcomment );
+							$updatedcomments++;
+						}
+					}
+					if($updatedcomments <= 0){
+						$childdata['comment_author_url'] = $child['url'][0];
+						$childdata['comment_approved'] = 0;
+						$comment_id = wp_new_comment( $childdata );
+					}
+					
+				}else{
+					//Insert new comment and get the comment ID
+					$childdata['comment_approved'] = 0;
+					$childdata['comment_author_url'] = $child['url'][0];
+					$comment_id = wp_new_comment( $childdata );
+					
+				}
+				if(isset($comment_id) && self::check_mf_attr('photo', $author)){
+					update_comment_meta( $comment_id, 'semantic_linkbacks_avatar', $author['photo'][0] );
+					update_comment_meta( $comment_id, 'semantic_linkbacks_canonical', $child['url'][0] );
+					update_comment_meta( $comment_id, 'semantic_linkbacks_type', $type );
+					unset ($comment_id);
+				}
+				//error_log("CHILD COMMENT ENTERING:".print_r($childdata,true));
+			}
+	    }
+
 	}
 
 	/**
