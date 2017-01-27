@@ -5,18 +5,20 @@ if ( ! class_exists( 'Mf2\Parser' ) ) {
 
 use Mf2\Parser;
 
+add_action( 'init', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'init' ) );
+
 /**
  * provides a microformats handler for the semantic linkbacks
  * WordPress plugin
  *
  * @author Matthias Pfefferle
  */
-class Linkbacks_MF2_Handler {
+class SemanticLinkbacksPlugin_MicroformatsHandler {
 	/**
 	 * initialize the plugin, registering WordPess hooks.
 	 */
 	public static function init() {
-		add_filter( 'semantic_linkbacks_commentdata', array( 'Linkbacks_MF2_Handler', 'generate_commentdata' ), 1, 3 );
+		add_filter( 'semantic_linkbacks_commentdata', array( 'SemanticLinkbacksPlugin_MicroformatsHandler', 'generate_commentdata' ), 1, 4 );
 	}
 
 	/**
@@ -39,25 +41,28 @@ class Linkbacks_MF2_Handler {
 		 * repost
 		 * @link http://indiewebcamp.com/repost
 		 */
+		$class_mapper['repost'] = 'repost';
 		$class_mapper['repost-of'] = 'repost';
 
 		/*
 		 * likes
 		 * @link http://indiewebcamp.com/likes
 		 */
+		$class_mapper['like'] = 'like';
 		$class_mapper['like-of'] = 'like';
 
 		/*
 		 * favorite
 		 * @link http://indiewebcamp.com/favorite
 		 */
+		$class_mapper['favorite'] = 'favorite';
 		$class_mapper['favorite-of'] = 'favorite';
 
 		/*
-		 * bookmark
-		 * @link http://indiewebcamp.com/bookmark
+		 * mentions
+		 * @link http://indiewebcamp.com/mentions
 		 */
-		$class_mapper['bookmark-of'] = 'bookmark';
+		//$class_mapper["mention"] = "mention";
 
 		/*
 		 * rsvp
@@ -87,7 +92,7 @@ class Linkbacks_MF2_Handler {
 		 * @link http://indiewebcamp.com/in-reply-to
 		 */
 		$rel_mapper['in-reply-to'] = 'reply';
-		$rel_mapper['reply-of'] = 'reply';
+		$rel_mapper['reply-of']	= 'reply';
 
 		return apply_filters( 'semantic_linkbacks_microformats_rel_mapper', $rel_mapper );
 	}
@@ -97,17 +102,16 @@ class Linkbacks_MF2_Handler {
 	 *
 	 * @param WP_Comment $commentdata the comment object
 	 * @param string $target the target url
-	 *
-	 * @return array
+	 * @param string $html the parsed html
 	 */
-	public static function generate_commentdata( $commentdata, $target ) {
+	public static function generate_commentdata( $commentdata, $target, $html ) {
 		global $wpdb;
 
 		// add source
 		$source = $commentdata['comment_author_url'];
 
 		// parse source html
-		$parser = new Parser( $commentdata['remote_source_original'], $source );
+		$parser = new Parser( $html, $source );
 		$mf_array = $parser->parse( true );
 
 		// get all 'relevant' entries
@@ -167,113 +171,30 @@ class Linkbacks_MF2_Handler {
 			}
 
 			if ( self::check_mf_attr( 'url', $author ) ) {
-				$commentdata['comment_meta']['semantic_linkbacks_author_url'] = esc_url_raw( $author['url'][0] );
+				$commentdata['_author_url'] = esc_url_raw( $author['url'][0] );
 			}
 
 			if ( self::check_mf_attr( 'photo', $author ) ) {
-				$commentdata['comment_meta']['semantic_linkbacks_avatar'] = esc_url_raw( $author['photo'][0] );
+				$commentdata['_avatar'] = esc_url_raw( $author['photo'][0] );
 			}
 		}
 
 		// set canonical url (u-url)
 		if ( self::check_mf_attr( 'url', $properties ) ) {
-			$commentdata['comment_meta']['semantic_linkbacks_canonical'] = esc_url_raw( $properties['url'][0] );
+			$commentdata['_canonical'] = esc_url_raw( $properties['url'][0] );
 		} else {
-			$commentdata['comment_meta']['semantic_linkbacks_canonical'] = esc_url_raw( $source );
+			$commentdata['_canonical'] = esc_url_raw( $source );
 		}
 
 		// check rsvp property
 		if ( self::check_mf_attr( 'rsvp', $properties ) ) {
-			$commentdata['comment_meta']['semantic_linkbacks_type'] = wp_slash( 'rsvp:' . $properties['rsvp'][0] );
+			$commentdata['_type'] = wp_slash( 'rsvp:'.$properties['rsvp'][0] );
 		} else {
 			// get post type
-			$commentdata['comment_meta']['semantic_linkbacks_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
+			$commentdata['_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
 		}
 
-		self::scan_for_children($target, $properties);
-
 		return $commentdata;
-	}
-
-	public static function scan_for_children($target, $properties){
-
-		//BEGIN SALMENTION CODE ATTEMPT
-
-	    if (self::check_mf_attr('comment', $properties)) {
-			$postid = url_to_postid( $target );
-			foreach($properties['comment'] as $key=>$c){
-
-				error_log("CHILD MAJOR PARSING:".print_r($c,true));
-				$child = $c['properties'];
-				error_log("CHILD COMMENT PARSING:".print_r($child,true));
-
-				
-				if(self::check_mf_attr('author', $child)){
-					$author = $child['author'][0]['properties'];
-				}else if(self::check_mf_attr('children', $c) && $c['children'][0]['type'][0] == 'h-card'){
-					$author = $c['children'][0]['properties'];
-				}else{
-		    			error_log("NO AUTHOR! BREAKING!");
-					break;
-				}
-				
-		    		if (!self::check_mf_attr('name', $author)) {error_log("NO AUTHOR NAME! BREAKING!");break;}
-				$authorname = $author['name'][0];
-		    		if (!self::check_mf_attr('content', $child)) {error_log("NO CONTENT! BREAKING!");break;}
-				$content = wp_filter_kses($child['content'][0]['html']);
-				$type = wp_slash(self::get_entry_type($target, $c, $mf_array));
-				$childdata = array(
-					'comment_post_ID' => $postid, // to which post the comment will show up
-					'comment_author' => $authorname, //fixed value - can be dynamic 
-					'comment_content' => $content, //fixed value - can be dynamic 
-					'comment_type' => "", //empty for regular comments, 'pingback' for pingbacks, 'trackback' for trackbacks
-					'comment_parent' => 0, //0 if it's not a reply to another comment; if it's a reply, mention the parent comment ID here
-					'user_id' => $current_user->ID, //passing current user ID or any predefined as per the demand
-				);
-				if (self::check_mf_attr('url', $child)) {
-					$args = array(
-						'post_id' => $postid
-					);
-					$foundcomments = get_comments($args);
-
-					$updatedcomments = 0;
-					if(!empty($foundcomments)){
-						$foundcomment = get_comment( $foundcomments[0]->comment_ID, ARRAY_A );
-						$canonical = get_comment_meta( $foundcomments[0]->comment_ID,'semantic_linkbacks_canonical', true );
-						error_log("CANONICAL:".print_r($canonical,true)." vs CHILD URL:".print_r($child['url'][0],true));
-						if($canonical == $child['url'][0]){
-							foreach($childdata as $ck=>$cv){
-								$foundcomment[$ck]=$cv;
-							}	
-			
-							$foundcomment['comment_approved'] = 0;
-							wp_update_comment( $foundcomment );
-							$updatedcomments++;
-						}
-					}
-					if($updatedcomments <= 0){
-						$childdata['comment_author_url'] = $child['url'][0];
-						$childdata['comment_approved'] = 0;
-						$comment_id = wp_new_comment( $childdata );
-					}
-					
-				}else{
-					//Insert new comment and get the comment ID
-					$childdata['comment_approved'] = 0;
-					$childdata['comment_author_url'] = $child['url'][0];
-					$comment_id = wp_new_comment( $childdata );
-					
-				}
-				if(isset($comment_id) && self::check_mf_attr('photo', $author)){
-					update_comment_meta( $comment_id, 'semantic_linkbacks_avatar', $author['photo'][0] );
-					update_comment_meta( $comment_id, 'semantic_linkbacks_canonical', $child['url'][0] );
-					update_comment_meta( $comment_id, 'semantic_linkbacks_type', $type );
-					unset ($comment_id);
-				}
-				//error_log("CHILD COMMENT ENTERING:".print_r($childdata,true));
-			}
-	    }
-
 	}
 
 	/**
@@ -281,8 +202,6 @@ class Linkbacks_MF2_Handler {
 	 *
 	 * @param array $mf_array the microformats array
 	 * @param array the h-entry array
-	 *
-	 * @return array
 	 */
 	public static function get_entries( $mf_array ) {
 		$entries = array();
@@ -324,7 +243,6 @@ class Linkbacks_MF2_Handler {
 	 *
 	 * @param array $mf_array the parsed microformats array
 	 * @param string $source the source url
-	 *
 	 * @return array|null the h-card node or null
 	 */
 	public static function get_representative_author( $mf_array, $source ) {
@@ -352,7 +270,6 @@ class Linkbacks_MF2_Handler {
 	 *
 	 * @param array $mf_array the parsed microformats array
 	 * @param string $target the target url
-	 *
 	 * @return array the h-entry node or false
 	 */
 	public static function get_representative_entry( $entries, $target ) {
@@ -406,7 +323,6 @@ class Linkbacks_MF2_Handler {
 	 * @param string $target the target url
 	 * @param array $entry the represantative entry
 	 * @param array $mf_array the document
-	 *
 	 * @return string the post-type
 	 */
 	public static function get_entry_type( $target, $entry, $mf_array = array() ) {
@@ -467,7 +383,7 @@ class Linkbacks_MF2_Handler {
 	 *
 	 * @return boolean
 	 */
-	public static function check_mf_attr( $key, $node ) {
+	public static function check_mf_attr($key, $node) {
 		if ( isset( $node[ $key ] ) && isset( $node[ $key ][0] ) ) {
 			return true;
 		}
@@ -480,11 +396,11 @@ class Linkbacks_MF2_Handler {
 	 *
 	 * @param string $needle the target url
 	 * @param array $haystack a list of urls
-	 * @param boolean $schemelesse define if the target url should be checked with http:// and https://
-	 *
+	 * @param boolean $schemelesse define if the target url should be checked
+	 *		with http:// and https://
 	 * @return boolean
 	 */
-	public static function compare_urls( $needle, $haystack, $schemeless = true ) {
+	public static function compare_urls($needle, $haystack, $schemeless = true) {
 		if ( true === $schemeless ) {
 			// remove url-scheme
 			$schemeless_target = preg_replace( '/^https?:\/\//i', '', $needle );
