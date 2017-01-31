@@ -190,12 +190,12 @@ class Linkbacks_MF2_Handler {
 			$commentdata['comment_meta']['semantic_linkbacks_type'] = wp_slash( self::get_entry_type( $target, $entry, $mf_array ) );
 		}
 
-		self::scan_for_children($target, $properties);
+		self::scan_for_children($target, $properties,$mf_array);
 
 		return $commentdata;
 	}
 
-	public static function scan_for_children($target, $properties){
+	public static function scan_for_children($target, $properties, $mf_array){
 
 		//BEGIN SALMENTION CODE ATTEMPT
 
