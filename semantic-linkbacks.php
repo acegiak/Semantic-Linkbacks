@@ -53,6 +53,23 @@ class Semantic_Linkbacks_Plugin {
 		remove_filter( 'webmention_comment_data', array( 'Webmention_Receiver', 'default_content_filter' ), 22 );
 
 		self::plugin_textdomain();
+
+
+		add_action('transition_comment_status', 'salmention_approve_comment_callback', 10, 3);
+		function salmention_approve_comment_callback($new_status, $old_status, $comment) {
+		    if($old_status != $new_status) {
+		        if($new_status == 'approved') {
+			    error_log("approved!");
+			    $meta = get_post_meta($comment->comment_post_ID, 'mf2_in-reply-to', true);
+			    if(!$meta){$meta = get_post_meta($comment->comment_post_ID, 'mf2_resost-of', true);}
+			    error_log(json_encode($meta));
+			    if($meta){
+				error_log("sending webmention because comment were approved");
+				do_action('send_webmention',get_post_permalink($comment->comment_post_ID),$meta);
+			    }
+		        }
+		    }
+		}
 	}
 
 	/**
