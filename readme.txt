@@ -1,3 +1,9 @@
+=== Repo Moved ===
+Main version of this plugin is now being maintained by @pfefferle:
+https://github.com/pfefferle/wordpress-semantic-linkbacks
+
+
+
 === Semantic-Linkbacks ===
 Contributors: pfefferle
 Donate link: http://14101978.de
